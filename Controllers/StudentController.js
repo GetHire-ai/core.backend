@@ -80,7 +80,7 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
     Student = new StudentModel({
       Name,
       Email,
-      Number,
+      Number: `+91${Number}`,
       otp,
       Current_Salary,
       Education,
@@ -169,6 +169,115 @@ const CreateStudentOtp = asynchandler(async (req, res) => {
     res.status(500).send({
       success: false,
       error: error,
+    });
+  }
+});
+
+const CreateStudentOtpforSignup = asynchandler(async (req, res) => {
+  try {
+    const channel = req.params.channel;
+    const { Number, Email, orderId, hash, expiry, otpLength } = req.body;
+    if (!Number && !Email) {
+      return res.status(400).send({
+        success: false,
+        error: "Either mobile or email is required",
+      });
+    }
+    if (!channel) {
+      return res.status(400).send({
+        success: false,
+        error: "Channel is required",
+      });
+    }
+    let Student;
+    if (Number) {
+      Student = await StudentModel.findOne({ Number: Number });
+    } else if (Email) {
+      Student = await StudentModel.findOne({ Email: Email });
+    }
+    if (Student) {
+      return res.status(400).send({
+        status: false,
+        message: "Account Exist with this Credentials Please Login",
+      });
+    }
+    try {
+      const response = await UserDetail.sendOTP(
+        Number,
+        Email,
+        channel,
+        hash,
+        orderId,
+        expiry,
+        otpLength,
+        clientId,
+        clientSecret
+      );
+      console.log("Success", response);
+      if (response?.errorMessage) {
+        return res.status(500).send(response);
+      }
+      res.status(200).send({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.log("Error", error);
+      res.status(500).send({
+        success: false,
+        error: error,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      error: error,
+    });
+  }
+});
+
+const verifyotpforsignup = asynchandler(async (req, res) => {
+  const { orderId, otp, Number, Email } = req.body;
+
+  if (!orderId || !otp) {
+    return res.status(400).send({
+      success: false,
+      error: "Invalid request - orderId and otp are required",
+    });
+  }
+  if (!Number && !Email) {
+    return res.status(400).send({
+      success: false,
+      error: "Invalid request - mobile or email is required",
+    });
+  }
+
+  try {
+    const response = await UserDetail.verifyOTP(
+      Email,
+      Number,
+      orderId,
+      otp,
+      clientId,
+      clientSecret
+    );
+
+    if (response?.errorMessage) {
+      return res.status(500).send(response);
+    }
+    if (response?.isOTPVerified == false) {
+      return res.status(500).send(response);
+    }
+    return res.status(200).send({
+      status: true,
+      message: "OTP Verified",
+    });
+  } catch (err) {
+    console.log("Error", err);
+    res.status(500).send({
+      success: false,
+      error: err.message,
     });
   }
 });
@@ -525,6 +634,38 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
+const UpdateStudentSkillScore = asynchandler(async (req, res) => {
+  try {
+    const studentId = req.StudentId;
+    const skillToUpdate = req.body;
+    const student = await StudentModel.findById(studentId);
+
+    if (!student) {
+      return response.notFoundError(res, "Student Not Found");
+    }
+    if (!Array.isArray(student.Skill_Set)) {
+      return response.badRequest(res, "Skill_Set is not an array");
+    }
+    const skillIndex = student.Skill_Set.findIndex(
+      (skill) => skill._id.toString() === skillToUpdate._id.toString()
+    );
+    if (skillIndex !== -1) {
+      student.Skill_Set[skillIndex].score = skillToUpdate.score;
+    } else {
+      student.Skill_Set.push(skillToUpdate);
+    }
+    const updatedStudent = await student.save();
+    console.log(updatedStudent)
+    return response.successResponse(
+      res,
+      updatedStudent,
+      "Student updated successfully"
+    );
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal server error");
+  }
+});
 
 //============================[ApplyForJob ]==============================
 
@@ -644,16 +785,14 @@ const GetAllAppiledJobidsofaStudent = asynchandler(async (req, res) => {
     if (!appliedJobs || appliedJobs.length === 0) {
       return response.notFound(res, "No applied jobs found for this student.");
     }
-
-    const appliedJobIds = appliedJobs.map((job) => job.JobId._id);
-
+    const appliedJobIds = appliedJobs.map((job) => job.JobId?._id);
     return response.successResponse(
       res,
       { appliedJobIds },
       "Retrieved applied job IDs successfully."
     );
   } catch (error) {
-    console.error(error);
+    // console.log(error);
     return response.internalServerError(res, "Internal server error");
   }
 });
@@ -751,7 +890,11 @@ const getallbookmark = asynchandler(async (req, res) => {
     const userBookmark = await BookmarkModel.findOne({ StudentId });
 
     if (!userBookmark) {
-      return response.validationError(res, "No bookmarks found for the user.");
+      return response.successResponse(
+        res,
+        { bookmarkedJobs: [] },
+        "No bookmarks found for the user."
+      );
     }
 
     const bookmarkedJobIds = userBookmark.bookmarkedJobs.map(
@@ -864,4 +1007,7 @@ module.exports = {
   GetAllBookmarkjobsofaStudent,
   getallbookmark,
   Create_StudentTestResult,
+  CreateStudentOtpforSignup,
+  verifyotpforsignup,
+  UpdateStudentSkillScore,
 };

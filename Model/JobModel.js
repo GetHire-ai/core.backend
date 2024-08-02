@@ -15,11 +15,18 @@ const JobSchema = new mongoose.Schema({
   openings: { type: Number },
   numOfDays: { type: Number },
   currency: { type: String },
+  salaryType: { type: String },
+  minEducation: { type: String },
+  englishLevel: { type: String },
+  expRequired: { type: String },
+  incentive: { type: Number },
   perks: { type: [String] },
   responsibilities: { type: String },
-  videoQuestions: { type: [String] },
-  mcqQuestions: [],
-  JobActive: { type: Boolean, default: false },
+  finalInterview: { type: {} },
+  videoInterview: { type: {} },
+  skillAssessment: [],
+  videoQuestions: [],
+  JobActive: { type: Boolean, default: true },
   rounds: [
     {
       Round: { type: Number },
@@ -41,10 +48,7 @@ const JobSchema = new mongoose.Schema({
   maxSalary: { type: Number, default: null },
   minSalary: { type: Number, default: null },
   jobFrequency: { type: String },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  createdAt: { type: Date, default: Date.now },
 });
 
 const JobModel = mongoose.model("Jobs", JobSchema);

@@ -1,6 +1,8 @@
 const socketIo = require("socket.io");
 const Chat = require("../Model/ChatModel");
 const Conversation = require("../Model/ConversationModel");
+const AdminChat = require("../Model/AdminChatModel");
+const AdminConversation = require("../Model/AdminConversationModel");
 
 // Track online users
 let onlineUsers = {};
@@ -21,8 +23,6 @@ module.exports = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("New client connected:", socket.id);
-
     socket.on("userConnected", (userId) => {
       onlineUsers[userId] = socket.id;
       io.emit("userStatus", { userId, online: true });
@@ -40,7 +40,6 @@ module.exports = (server) => {
 
     socket.on("joinConversation", (conversationId) => {
       socket.join(conversationId);
-      console.log(`Socket ${socket.id} joined conversation ${conversationId}`);
     });
 
     socket.on("sendMessage", async (data) => {
@@ -51,7 +50,6 @@ module.exports = (server) => {
         senderType,
         message,
       });
-
       try {
         await chatMessage.save();
         await Conversation.findByIdAndUpdate(conversationId, {
@@ -63,9 +61,26 @@ module.exports = (server) => {
         console.error("Error saving message to database:", error);
       }
     });
-
-    socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
+    socket.on("sendMessageAdmin", async (data) => {
+      const { conversationId, senderId, senderType, message } = data;
+      const chatMessage = new AdminChat({
+        conversationId,
+        senderId,
+        senderType,
+        message,
+      });
+      try {
+        await chatMessage.save();
+        await AdminConversation.findByIdAndUpdate(conversationId, {
+          lastMessage: chatMessage._id,
+          lastMessageTime: chatMessage.timestamp,
+        });
+        io.to(conversationId).emit("receiveMessage", chatMessage);
+      } catch (error) {
+        console.error("Error saving message to database:", error);
+      }
     });
+
+    socket.on("disconnect", () => {});
   });
 };

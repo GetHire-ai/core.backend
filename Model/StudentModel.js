@@ -69,6 +69,7 @@ const StudentSchema = new mongoose.Schema({
     {
       Skill: { type: String, required: true },
       Rate: { type: String, required: true, default: "Beginner" },
+      score: { type: Number, required: true, default: 0 },
     },
   ],
   Work_Samples: [

@@ -20,6 +20,8 @@ const AdminRoutes = require("./Routes/AdminRoute");
 const EmployeeRoutes = require("./Routes/EmployeeRoute");
 const TestRoutes = require("./Routes/TestRoutes");
 const ChatRoutes = require("./Routes/ChatRoutes");
+const AdminChatRoutes = require("./Routes/AdminChatRoutes");
+const NotificationRoutes = require("./Routes/NotificationRoutes");
 
 app.use("/api/CompanyRoutes", CompanyRoutes);
 app.use("/api/StudentRoutes", StudentRoutes);
@@ -27,6 +29,8 @@ app.use("/api/AdminRoutes", AdminRoutes);
 app.use("/api/EmployeeRoutes", EmployeeRoutes);
 app.use("/api/testRoutes", TestRoutes);
 app.use("/api/chatRoutes", ChatRoutes);
+app.use("/api/adminchatRoutes", AdminChatRoutes);
+app.use("/api/notificationroutes", NotificationRoutes);
 
 app.get("/", (req, res) => {
   res.send("Get Hire API is live!");

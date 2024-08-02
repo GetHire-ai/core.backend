@@ -2,17 +2,20 @@ const asynchandler = require("express-async-handler");
 const response = require("../Middleware/responseMiddlewares");
 const CompanyModel = require("../Model/CompanyModel");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const { UserDetail } = require("otpless-node-js-auth-sdk");
 const clientId = process.env.AUTH_CLIENT_ID || "";
 const clientSecret = process.env.AUTH_CLIENT_SECRET || "";
 const cloudinary = require("../Middleware/Cloudinary");
-
 const nodemailer = require("nodemailer");
+const Notification = require("../Model/NotificationModel");
 const JobModel = require("../Model/JobModel");
 const TestModel = require("../Model/TestModel");
 const JobApplyModel = require("../Model/JobApplyModel");
 const EmployeeModel = require("../Model/EmployeeModel");
 const HolidaysModel = require("../Model/HolidaysModel");
+const ImportedApplicationModel = require("../Model/ImportedApplicationModel");
+const CompanyFundsTransModel = require("../Model/CompanyFundsTrans");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -35,6 +38,11 @@ const verifyEmailotp = asynchandler(async (req, res) => {
 
     if (!Email && !otp) {
       return response.validationError(res, "Email and Otp is required");
+    }
+
+    let company = await CompanyModel.findOne({ Email });
+    if (company) {
+      return response.validationError(res, "Email Id Already Exist !");
     }
 
     const mailOptions = {
@@ -66,15 +74,21 @@ const verifyEmailotp = asynchandler(async (req, res) => {
 
 const RegisterCompany = asynchandler(async (req, res, next) => {
   try {
-    const { Name, Email, Number } = req.body;
+    const { Name, Email, Number, Password, firstName, lastName } = req.body;
 
     if (!Name) {
       return response.validationError(res, "Name is required");
     }
+    if (!lastName) {
+      return response.validationError(res, "Name is required");
+    }
     if (!Email) {
-      return response.validationError(res, "Email is required");
+      return response.validationError(res, "lastName is required");
     }
     if (!Number) {
+      return response.validationError(res, "Number is required");
+    }
+    if (!Password) {
       return response.validationError(res, "Number is required");
     }
 
@@ -89,10 +103,15 @@ const RegisterCompany = asynchandler(async (req, res, next) => {
       return response.validationError(res, "Number alredy Exist ");
     }
 
+    const hashedPassword = await bcrypt.hash(Password, 10);
+
     Company = new CompanyModel({
       Name,
+      firstName,
+      lastName,
       Email,
       Number,
+      Password: hashedPassword,
       otp,
     });
 
@@ -105,6 +124,51 @@ const RegisterCompany = asynchandler(async (req, res, next) => {
       { Company: Company, token: token },
       "Register Successful"
     );
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal server error");
+  }
+});
+
+const LoginCompanywithPassword = asynchandler(async (req, res, next) => {
+  try {
+    const { Email, Number, Password } = req.body;
+
+    if (!Email && !Number) {
+      return response.validationError(res, "Email and Phone are required");
+    }
+
+    if (!Password) {
+      return response.validationError(res, "Password is required");
+    }
+    let user;
+    if (Email) {
+      user = await CompanyModel.findOne({ Email: Email });
+    }
+    if (Number) {
+      user = await CompanyModel.findOne({ Number: Number });
+    }
+    if (!user) {
+      return response.notFoundError(res, "Company not found");
+    }
+    const passwordMatch = await bcrypt.compare(Password, user.Password);
+    if (!passwordMatch) {
+      return response.validationError(res, "Incorrect password");
+    }
+    const token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      "company"
+    );
+
+    return res.status(200).send({
+      status: true,
+      message: "Complny login successfull",
+      data: user,
+      token: token,
+      ...response,
+    });
   } catch (error) {
     console.log(error);
     return response.internalServerError(res, "Internal server error");
@@ -340,6 +404,70 @@ const CompanyEmailOtpLoginVerify = asynchandler(async (req, res) => {
   }
 });
 
+const resetPassword = asynchandler(async (req, res, next) => {
+  try {
+    const { Password } = req.body;
+
+    if (!Password) {
+      return response.validationError(res, "Password is required");
+    }
+    let user = await CompanyModel.findById(req.params.id);
+    if (!user) {
+      return response.notFoundError(res, "Company not found");
+    }
+    const hashedPassword = await bcrypt.hash(Password, 10);
+    user.Password = hashedPassword;
+    user.save();
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      "company"
+    );
+
+    return res.status(200).send({
+      status: true,
+      message: "Password Reset successfull",
+      data: user,
+      token: token,
+      ...response,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal server error");
+  }
+});
+const resetPasswordwithPassword = asynchandler(async (req, res) => {
+  try {
+    const { Password, newPassword } = req.body;
+    const companyId = req.userId;
+    if (!Password) {
+      return response.validationError(res, "Password is required");
+    }
+    let user = await CompanyModel.findById(companyId);
+    if (!user) {
+      return response.notFoundError(res, "Company not found");
+    }
+    const passwordMatch = await bcrypt.compare(Password, user.Password);
+    if (!passwordMatch) {
+      return response.validationError(res, "Password is Not Match");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.Password = hashedPassword;
+    user.save();
+
+    return res.status(200).send({
+      status: true,
+      message: "Password Reset successfull",
+    });
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal server error");
+  }
+});
+
 //====================================[Get Company Details]========================
 
 const GetCompanyprofile = async (req, res) => {
@@ -377,6 +505,9 @@ const UpdateCompanyProfile = asynchandler(async (req, res) => {
       Email,
       Number,
       Name,
+      firstName,
+      lastName,
+      designation,
       Title,
       Discription,
       Type,
@@ -430,6 +561,15 @@ const UpdateCompanyProfile = asynchandler(async (req, res) => {
     }
     if (Number) {
       GetCompany.Number = Number;
+    }
+    if (firstName) {
+      GetCompany.firstName = firstName;
+    }
+    if (lastName) {
+      GetCompany.lastName = lastName;
+    }
+    if (designation) {
+      GetCompany.designation = designation;
     }
     if (Name) {
       GetCompany.Name = Name;
@@ -521,9 +661,16 @@ const CreateJob = asynchandler(async (req, res) => {
       jobFrequency,
       ppo,
       openings,
-      videoQuestions,
       perks,
-      mcqQuestions,
+      skillAssessment,
+      finalInterview,
+      videoInterview,
+      videoQuestions,
+      salaryType,
+      minEducation,
+      englishLevel,
+      expRequired,
+      incentive,
     } = req.body;
 
     if (!positionName) {
@@ -549,10 +696,17 @@ const CreateJob = asynchandler(async (req, res) => {
       responsibilities,
       rounds,
       numOfDays,
+      videoQuestions,
       shift,
       perks,
-      mcqQuestions,
-      videoQuestions,
+      skillAssessment,
+      finalInterview,
+      videoInterview,
+      salaryType,
+      minEducation,
+      englishLevel,
+      expRequired,
+      incentive,
     };
 
     if (type === "internship") {
@@ -565,7 +719,6 @@ const CreateJob = asynchandler(async (req, res) => {
         stipendType,
         stipend: req.body.stipend,
         ppo,
-        assessmentQuestions,
       };
     } else if (type === "job") {
       jobData = {
@@ -582,22 +735,6 @@ const CreateJob = asynchandler(async (req, res) => {
 
     let newJob = new JobModel(jobData);
     await newJob.save();
-
-    // If MCQ questions are provided, create a Test document
-    if (mcqQuestions && mcqQuestions.length > 0) {
-      const testQuestions = mcqQuestions.map((question) => ({
-        questionText: question.question,
-        options: question.options.map((opt) => ({ optionText: opt })),
-        correctAnswer: question.correctAnswer,
-      }));
-
-      const newTest = new TestModel({
-        job: newJob._id,
-        questions: testQuestions,
-      });
-
-      await newTest.save();
-    }
 
     return response.successResponse(
       res,
@@ -912,7 +1049,9 @@ const RejectJobApplication = asynchandler(async (req, res) => {
     const Companyid = req.userId;
     const { id } = req.params;
 
-    const jobapplication = await JobApplyModel.findById(id);
+    const jobapplication = await JobApplyModel.findById(id)
+      .populate("CompanyId")
+      .populate("JobId");
 
     if (!jobapplication) {
       return response.notFoundError(res, " Job Not found");
@@ -920,8 +1059,14 @@ const RejectJobApplication = asynchandler(async (req, res) => {
     jobapplication.isrejected = true;
     jobapplication.isshortlisted = false;
     jobapplication.status = "rejected";
-
     await jobapplication.save();
+
+    let notification = await Notification.create({
+      CompanyId: Companyid,
+      StudentId: jobapplication?.StudentId?._id,
+      JobId: jobapplication?.JobId?._id,
+      text: `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`,
+    });
 
     return response.successResponse(
       res,
@@ -1039,16 +1184,21 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
     const Companyid = req.userId;
     const { id } = req.params;
 
-    const jobapplication = await JobApplyModel.findById(id);
-
+    const jobapplication = await JobApplyModel.findById(id)
+      .populate("CompanyId")
+      .populate("JobId");
     if (!jobapplication) {
       return response.notFoundError(res, " Job Not found");
     }
     jobapplication.isshortlisted = true;
     jobapplication.status = "shortlisted";
-
     await jobapplication.save();
-
+    let notification = await Notification.create({
+      CompanyId: Companyid,
+      StudentId: jobapplication?.StudentId?._id,
+      JobId: jobapplication?.JobId?._id,
+      text: `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`,
+    });
     return response.successResponse(
       res,
       jobapplication,
@@ -1165,14 +1315,21 @@ const ScheduleInterview = asynchandler(async (req, res) => {
     const { id } = req.params;
     const { interviewSchedule } = req.body;
 
-    const jobApplication = await JobApplyModel.findById(id);
+    const jobApplication = await JobApplyModel.findById(id)
+      .populate("CompanyId")
+      .populate("JobId");
     if (!jobApplication) {
       return response.notFoundError(res, "Job Application not found");
     }
-
     jobApplication.interviewSchedule = interviewSchedule;
     jobApplication.isinterviewScheduled = true;
     await jobApplication.save();
+    let notification = await Notification.create({
+      CompanyId: Companyid,
+      StudentId: jobApplication?.StudentId?._id,
+      JobId: jobApplication?.JobId?._id,
+      text: `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`,
+    });
 
     return response.successResponse(
       res,
@@ -1308,7 +1465,9 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
     const { id } = req.params;
     const companyId = req.userId;
 
-    const jobApplication = await JobApplyModel.findById(id);
+    const jobApplication = await JobApplyModel.findById(id)
+      .populate("CompanyId")
+      .populate("JobId");
 
     if (!jobApplication) {
       return response.notFoundError(res, "Job application not found.");
@@ -1319,8 +1478,14 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
     jobApplication.isInterviewcompleted = true;
     await jobApplication.save();
 
-    const { StudentId, JobId } = jobApplication;
+    let notification = await Notification.create({
+      CompanyId: Companyid,
+      StudentId: jobApplication?.StudentId?._id,
+      JobId: jobApplication?.JobId?._id,
+      text: `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`,
+    });
 
+    const { StudentId, JobId } = jobApplication;
     const job = await JobModel.findById(JobId);
 
     if (!job) {
@@ -1940,6 +2105,130 @@ const GetSavedCandidates = asynchandler(async (req, res) => {
   }
 });
 
+// Import applications data
+
+const getImportData = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let newImport = await ImportedApplicationModel.find({ companyId });
+    if (newImport) {
+      response.successResponse(res, newImport, "Data Imported");
+    }
+  } catch (error) {
+    console.error(error);
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+const getImportDataById = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let newImport = await ImportedApplicationModel.findById(req.params.id);
+    if (newImport) {
+      response.successResponse(res, newImport, "Data Imported");
+    }
+  } catch (error) {
+    console.error(error);
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+const saveImportData = asynchandler(async (req, res) => {
+  try {
+    if (req.body.data.length === 0) {
+      response.internalServerError(res, "Send Data");
+      return;
+    }
+    const companyId = req.userId;
+    let newImport = await ImportedApplicationModel.create({
+      companyId,
+      status: "Pending",
+      data: req.body.data,
+    });
+    if (newImport) {
+      response.successResponse(res, newImport, "Data Imported");
+      return;
+    }
+  } catch (error) {
+    console.error(error);
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+const deleteImportData = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let data = await ImportedApplicationModel.findByIdAndDelete(req.params.id);
+    if (data) {
+      response.successResponse(res, data, "Data Deleted");
+    }
+  } catch (error) {
+    console.error(error);
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+const assignImportData = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let { jobId, importId } = req.body;
+    let importData = await ImportedApplicationModel.findById(importId);
+    importData.status = "Imported";
+    importData.jobId = jobId;
+    response.successResponse(res, importData, "Data assign to job");
+    await importData.save();
+  } catch (error) {
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+
+// Funds transaction
+
+const addFunds = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let { transactionId, amount, message } = req.body;
+    let transaction = await CompanyFundsTransModel.create({
+      CompanyId: companyId,
+      transactionId,
+      amount,
+      message,
+    });
+    let company = await CompanyModel.findById(companyId);
+    if (company) {
+      company.balance += amount;
+      await company.save();
+    }
+    response.successResponse(res, transaction, "Funds Added");
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+
+const getFunds = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let transactions = await CompanyFundsTransModel.find({
+      CompanyId: companyId,
+    }).sort({
+      createdAt: -1,
+    });
+    response.successResponse(res, transactions, "Funds fetched successfully");
+  } catch (error) {
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+
+const getBalance = asynchandler(async (req, res) => {
+  try {
+    const companyId = req.userId;
+    let company = await CompanyModel.findById(companyId);
+    let data = {
+      balance: company.balance || 0,
+    };
+    response.successResponse(res, data, "Funds fetched successfully");
+  } catch (error) {
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+
 module.exports = {
   RegisterCompany,
   verifyEmailotp,
@@ -1987,4 +2276,15 @@ module.exports = {
   GetSavedCandidates,
   SaveCandidate,
   removeCandidate,
+  LoginCompanywithPassword,
+  resetPassword,
+  resetPasswordwithPassword,
+  saveImportData,
+  assignImportData,
+  deleteImportData,
+  getImportData,
+  getImportDataById,
+  addFunds,
+  getFunds,
+  getBalance
 };

@@ -47,18 +47,37 @@ const {
   GetSavedCandidates,
   SaveCandidate,
   removeCandidate,
+  LoginCompanywithPassword,
+  resetPassword,
+  resetPasswordwithPassword,
+  saveImportData,
+  deleteImportData,
+  assignImportData,
+  getImportData,
+  getImportDataById,
+  getFunds,
+  addFunds,
+  getBalance,
 } = require("../Controllers/CompayController");
 const upload = require("../Middleware/multer");
 const { GetAllStudents } = require("../Controllers/AdminController");
+const { verifyToken } = require("otpless-node-js-auth-sdk");
 
 const CompanyRouter = express.Router();
 
 CompanyRouter.post("/verifyEmailotp", verifyEmailotp);
 CompanyRouter.post("/RegisterCompany", RegisterCompany);
+CompanyRouter.post("/resetpassword/:id", resetPassword);
+CompanyRouter.post(
+  "/resetpasswordwithpwd",
+  CompanyverifyToken,
+  resetPasswordwithPassword
+);
 CompanyRouter.post("/CreateCompanyOtp/:channel", CreateCompanyOtp);
 CompanyRouter.post("/verifyotp", verifyotp);
 CompanyRouter.post("/Resendotp", Resendotp);
 CompanyRouter.post("/CompanyLogin", CompanyLogin);
+CompanyRouter.post("/CompanyLoginwithpassword", LoginCompanywithPassword);
 CompanyRouter.post("/CompanyEmailOtpLoginVerify", CompanyEmailOtpLoginVerify);
 CompanyRouter.get("/GetCompanyprofile", CompanyverifyToken, GetCompanyprofile);
 CompanyRouter.get("/GetAllStudents", CompanyverifyToken, GetAllStudents);
@@ -210,5 +229,21 @@ CompanyRouter.get(
 CompanyRouter.post("/Createholiday", CompanyverifyToken, Createholiday);
 CompanyRouter.get("/GetHolidaysByDate", CompanyverifyToken, GetHolidaysByDate);
 CompanyRouter.get("/getallcompanies", CompanyverifyToken, getAllCompanies);
+CompanyRouter.get("/import", CompanyverifyToken, getImportData);
+CompanyRouter.get("/import/:id", CompanyverifyToken, getImportDataById);
+CompanyRouter.post("/import", CompanyverifyToken, saveImportData);
+CompanyRouter.delete(
+  "/import/delete/:id",
+  CompanyverifyToken,
+  deleteImportData
+);
+CompanyRouter.post("/import/assign", CompanyverifyToken, assignImportData);
+
+// Funds
+CompanyRouter.get("/wallet/transactions", CompanyverifyToken, getFunds);
+CompanyRouter.get("/wallet/balance", CompanyverifyToken, getBalance);
+CompanyRouter.post("/wallet/addfund", CompanyverifyToken, addFunds);
+
+// invite
 
 module.exports = CompanyRouter;

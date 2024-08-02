@@ -6,6 +6,8 @@ const JobApply = require("../Model/JobApplyModel");
 const TestResult = require("../Model/TestResultofaStudent");
 const response = require("../Middleware/responseMiddlewares");
 const JobApplyModel = require("../Model/JobApplyModel");
+const AITestModel = require("../Model/AITestResult");
+const TestModel = require("../Model/TestModel");
 
 // Create a new test
 const createTest = asynchandler(async (req, res) => {
@@ -102,33 +104,23 @@ const updateQuestion = asynchandler(async (req, res) => {
 
 const addTestResult = asynchandler(async (req, res) => {
   try {
-    // Destructure input fields from request body
-    let { test, answers, timeTaken } = req.body;
+    let { jobId, answers, timeTaken } = req.body;
     let score = 0;
-
-    // Calculate the score based on correct answers
     answers.forEach((ans) => {
       if (ans.isCorrect) {
         score += 1;
       }
     });
-
-    // Calculate the score percentage
     let totalQuestions = answers.length;
     let scorePercentage = ((score / totalQuestions) * 100).toFixed(2);
-    // Find the test details
-    let test1 = await Test.findById(test);
     let dataToSave = {
       student: req.StudentId,
-      test,
       answers,
       timeTaken,
       score,
       scorePercentage,
-      job: test1.job,
+      job: jobId,
     };
-
-    // Prepare assessment data
     let assessmentData = {
       Round: "Skill Assessment",
       score,
@@ -141,7 +133,7 @@ const addTestResult = asynchandler(async (req, res) => {
     // Update the applied job with the new assessment data and application stage
     let appliedJob = await JobApplyModel.findOneAndUpdate(
       {
-        $and: [{ JobId: test1.job }, { StudentId: req.StudentId }],
+        $and: [{ JobId: jobId }, { StudentId: req.StudentId }],
       },
       {
         $set: { Application_stage: "Skill Assessment" },
@@ -162,12 +154,7 @@ const addTestResult = asynchandler(async (req, res) => {
 // Get a single result by ID
 const getResultById = asynchandler(async (req, res) => {
   try {
-    const result = await TestResult.findById(req.params.id).populate({
-      path: "test",
-      populate: {
-        path: "job",
-      },
-    });
+    const result = await TestResult.findById(req.params.id).populate("job");
     if (!result) {
       return response.notFoundError(res, "result not found");
     }
@@ -205,6 +192,104 @@ const getAllTestResultsByMultiId = asynchandler(async (req, res) => {
   }
 });
 
+const createAiTestResult = asynchandler(async (req, res) => {
+  try {
+    let { jobId, score, aiText } = req.body;
+    let StudentId = req.StudentId;
+    let test = await AITestModel.findOne({ job: jobId, student: StudentId });
+    if (test) {
+      return response.errorResponse(res, "You Have Already Given Test !");
+    }
+    let dataToSave = {
+      student: StudentId,
+      job: jobId,
+      score,
+      aiText,
+    };
+
+    let result = await AITestModel.create(dataToSave);
+    return response.successResponse(res, result, "result Create successfully");
+  } catch (error) {
+    response.internalServerError(res, "internal server error");
+  }
+});
+
+const getTestResultsByStudentId = asynchandler(async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const results = await TestModel.find({ student: studentId })
+      .populate("job")
+      .populate("student");
+
+    if (results.length === 0) {
+      return response.successResponse(
+        res,
+        results,
+        "No AI test results found for the given student ID"
+      );
+    }
+
+    return response.successResponse(
+      res,
+      results,
+      "Test results fetched successfully"
+    );
+  } catch (error) {
+    console.log(error);
+    response.internalServerError(res, "Internal server error");
+  }
+});
+const getAITestResultsByStudentId = asynchandler(async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const results = await AITestModel.find({ student: studentId })
+      .populate("job")
+      .populate("student");
+
+    if (results.length === 0) {
+      return response.successResponse(
+        res,
+        results,
+        "No AI test results found for the given student ID"
+      );
+    }
+
+    return response.successResponse(
+      res,
+      results,
+      "AI Test results fetched successfully"
+    );
+  } catch (error) {
+    console.log(error);
+    response.internalServerError(res, "Internal server error");
+  }
+});
+
+const getAITestResultsByJobId = asynchandler(async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const results = await AITestModel.find({ job: jobId })
+      .populate("job")
+      .populate("student");
+
+    if (results.length === 0) {
+      return response.successResponse(
+        res,
+        results,
+        "No AI test results found for the given job ID"
+      );
+    }
+
+    return response.successResponse(
+      res,
+      results,
+      "AI Test results fetched successfully"
+    );
+  } catch (error) {
+    response.internalServerError(res, "Internal server error");
+  }
+});
+
 module.exports = {
   createTest,
   getAllTests,
@@ -217,4 +302,8 @@ module.exports = {
   addTestResult,
   getResultById,
   getAllTestResultsByMultiId,
+  createAiTestResult,
+  getTestResultsByStudentId,
+  getAITestResultsByJobId,
+  getAITestResultsByStudentId,
 };
