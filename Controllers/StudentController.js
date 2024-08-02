@@ -948,7 +948,7 @@ const Create_StudentTestResult = asynchandler(async (req, res) => {
   try {
     const studentId = req.StudentId;
     const { testId, answers } = req.body;
-
+    console.log(req.body);
     const test = await TestModel.findById(testId);
 
     if (!test) {
@@ -973,6 +973,7 @@ const Create_StudentTestResult = asynchandler(async (req, res) => {
       test: testId,
       answers: processedAnswers,
       score: score,
+      scorePercentage: score,
     });
 
     await studentTestResult.save();
