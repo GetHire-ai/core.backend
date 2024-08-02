@@ -655,7 +655,6 @@ const UpdateStudentSkillScore = asynchandler(async (req, res) => {
       student.Skill_Set.push(skillToUpdate);
     }
     const updatedStudent = await student.save();
-    console.log(updatedStudent)
     return response.successResponse(
       res,
       updatedStudent,

@@ -3,7 +3,7 @@ const Conversation = require("../Model/AdminConversationModel");
 const Company = require("../Model/CompanyModel");
 const Admin = require("../Model/AdminModel");
 const asynchandler = require("express-async-handler");
-const response = require("../middleware/responseMiddlewares");
+const response = require("../Middleware/responseMiddlewares");
 
 const getMessages = asynchandler(async (req, res) => {
   try {
