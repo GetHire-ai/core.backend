@@ -13,11 +13,11 @@ const {
 const router = express.Router();
 
 router.get("/result/:id", getResultById);
-router.get("/result/bystudentid/:id", getTestResultsByStudentId);
+router.get("/result/bystudentid/:id/:jobId", getTestResultsByStudentId);
 router.get("/result/multiid/:id", getAllTestResultsByMultiId);
 router.post("/result", StudentverifyToken, addTestResult);
 router.post("/result/aitestresult", StudentverifyToken, createAiTestResult);
 router.get("/result/aitestresult/byjobid/:id", getAITestResultsByJobId);
-router.get("/result/aitestresult/bystudentid/:id", getAITestResultsByStudentId);
+router.get("/result/aitestresult/bystudentid/:id/:jobId", getAITestResultsByStudentId);
 
 module.exports = router;

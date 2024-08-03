@@ -2,12 +2,10 @@ const asynchandler = require("express-async-handler");
 const Test = require("../Model/TestModel");
 const Job = require("../Model/JobModel");
 const Student = require("../Model/StudentModel");
-const JobApply = require("../Model/JobApplyModel");
 const TestResult = require("../Model/TestResultofaStudent");
 const response = require("../Middleware/responseMiddlewares");
 const JobApplyModel = require("../Model/JobApplyModel");
 const AITestModel = require("../Model/AITestResult");
-const TestModel = require("../Model/TestModel");
 
 const addTestResult = asynchandler(async (req, res) => {
   try {
@@ -36,6 +34,18 @@ const addTestResult = asynchandler(async (req, res) => {
       completedstatus: true,
       Notes: "",
     };
+
+    let existingResult = await TestResult.findOne({
+      student: req.StudentId,
+      job: jobId,
+    });
+
+    if (existingResult) {
+      return response.errorResponse(
+        res,
+        "Result already exists for this job and student"
+      );
+    }
 
     let appliedJob = await JobApplyModel.findOneAndUpdate(
       {
@@ -71,7 +81,6 @@ const getResultById = asynchandler(async (req, res) => {
 });
 
 // Get All Results by multi id
-
 const getAllTestResultsByMultiId = asynchandler(async (req, res) => {
   try {
     const { id } = req.params;
@@ -100,30 +109,39 @@ const getAllTestResultsByMultiId = asynchandler(async (req, res) => {
 
 const createAiTestResult = asynchandler(async (req, res) => {
   try {
-    let { jobId, score, aiText } = req.body;
-    let StudentId = req.StudentId;
-    let test = await AITestModel.findOne({ job: jobId, student: StudentId });
-    if (test) {
-      return response.errorResponse(res, "You Have Already Given Test !");
+    const { jobId, score, aiText } = req.body;
+    const studentId = req.StudentId;
+
+    // Check if the AI test result already exists
+    const existingTest = await AITestModel.findOne({
+      job: jobId,
+      student: studentId,
+    });
+    if (existingTest) {
+      return response.errorResponse(res, "You have already given the test!");
     }
-    let dataToSave = {
-      student: StudentId,
+
+    // Data to save
+    const dataToSave = {
+      student: studentId,
       job: jobId,
       score,
       aiText,
     };
 
-    let result = await AITestModel.create(dataToSave);
-    return response.successResponse(res, result, "result Create successfully");
+    // Save the test result
+    const result = await AITestModel.create(dataToSave);
+    return response.successResponse(res, result, "Result created successfully");
   } catch (error) {
-    response.internalServerError(res, "internal server error");
+    console.log(error);
+    response.internalServerError(res, "Internal server error");
   }
 });
 
 const getTestResultsByStudentId = asynchandler(async (req, res) => {
   try {
-    const { studentId } = req.params;
-    const results = await TestModel.find({ student: studentId })
+    const { id, jobId } = req.params;
+    const results = await TestResult.findOne({ student: id, job: jobId })
       .populate("job")
       .populate("student");
 
@@ -131,7 +149,7 @@ const getTestResultsByStudentId = asynchandler(async (req, res) => {
       return response.successResponse(
         res,
         results,
-        "No AI test results found for the given student ID"
+        "No  test results found for the given student ID"
       );
     }
 
@@ -148,18 +166,10 @@ const getTestResultsByStudentId = asynchandler(async (req, res) => {
 
 const getAITestResultsByStudentId = asynchandler(async (req, res) => {
   try {
-    const { studentId } = req.params;
-    const results = await AITestModel.find({ student: studentId })
+    const { id, jobId } = req.params;
+    const results = await AITestModel.findOne({ student: id, job: jobId })
       .populate("job")
       .populate("student");
-
-    if (results.length === 0) {
-      return response.successResponse(
-        res,
-        results,
-        "No AI test results found for the given student ID"
-      );
-    }
 
     return response.successResponse(
       res,
