@@ -708,7 +708,7 @@ const ApplyForJob = asynchandler(async (req, res) => {
       relocate,
       Custom_resume: uploadImg1,
     });
-    let findJob = await Job.findById(JobId);
+    let findJob = await JobModel.findById(JobId);
     let notification = await NotificationCompanyModel.create({
       CompanyId: CompanyId,
       StudentId: Studentid,
