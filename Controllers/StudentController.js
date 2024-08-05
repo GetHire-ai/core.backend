@@ -6,13 +6,13 @@ const { UserDetail } = require("otpless-node-js-auth-sdk");
 const clientId = process.env.AUTH_CLIENT_ID || "";
 const clientSecret = process.env.AUTH_CLIENT_SECRET || "";
 const cloudinary = require("../Middleware/Cloudinary");
-
 const nodemailer = require("nodemailer");
 const JobModel = require("../Model/JobModel");
 const JobApplyModel = require("../Model/JobApplyModel");
 const BookmarkModel = require("../Model/BookmarkModel");
 const TestModel = require("../Model/TestModel");
 const StudentTestResultModel = require("../Model/TestResultofaStudent");
+const NotificationCompanyModel = require("../Model/NotificationComModel");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -686,9 +686,7 @@ const ApplyForJob = asynchandler(async (req, res) => {
         "You have already applied for this job."
       );
     }
-
     let uploadImg1;
-
     if (req.files && req.files.image1 && req.files.image1[0]) {
       const uploadedFile = await cloudinary.uploader.upload(
         req.files.image1[0].path,
@@ -709,6 +707,13 @@ const ApplyForJob = asynchandler(async (req, res) => {
       Your_availability,
       relocate,
       Custom_resume: uploadImg1,
+    });
+    let findJob = await Job.findById(JobId);
+    let notification = await NotificationCompanyModel.create({
+      CompanyId: CompanyId,
+      StudentId: Studentid,
+      JobId: JobId,
+      text: `A new Student apply in your posted job for ${findJob?.positionName}.`,
     });
 
     const savedjob = await Job.save();

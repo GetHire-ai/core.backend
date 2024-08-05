@@ -521,15 +521,11 @@ const UpdateCompanyProfile = asynchandler(async (req, res) => {
       About,
       Industry,
     } = req.body;
-
     const GetCompany = await CompanyModel.findById(Companyid);
-
     if (!GetCompany) {
       return Response.notFoundError(res, "Company Not Found");
     }
-
     let uploadImg1;
-
     if (req.files && req.files.image1 && req.files.image1[0]) {
       const uploadedFile = await cloudinary.uploader.upload(
         req.files.image1[0].path,
@@ -638,7 +634,39 @@ const UpdateCompanyProfile = asynchandler(async (req, res) => {
 const CreateJob = asynchandler(async (req, res) => {
   try {
     const Companyid = req.userId;
-    const { type, internshipType, jobType, internshipDuration, stipendType, internshipDurationFrequency, internshipStart, positionName, location, minSalary, maxSalary, minExp, maxExp, currency, skillsRequired, responsibilities, rounds, numOfDays, shift, jobFrequency, ppo, openings, perks, skillAssessment, finalInterview, videoInterview, videoQuestions, salaryType, minEducation, englishLevel, expRequired, incentive,
+    const {
+      type,
+      internshipType,
+      jobType,
+      internshipDuration,
+      stipendType,
+      internshipDurationFrequency,
+      internshipStart,
+      positionName,
+      location,
+      minSalary,
+      maxSalary,
+      minExp,
+      maxExp,
+      currency,
+      skillsRequired,
+      responsibilities,
+      rounds,
+      numOfDays,
+      shift,
+      jobFrequency,
+      ppo,
+      openings,
+      perks,
+      skillAssessment,
+      finalInterview,
+      videoInterview,
+      videoQuestions,
+      salaryType,
+      minEducation,
+      englishLevel,
+      expRequired,
+      incentive,
     } = req.body;
 
     if (!positionName) {
@@ -654,46 +682,80 @@ const CreateJob = asynchandler(async (req, res) => {
     }
 
     let jobData = {
-      Company: company._id, companyName: company.Name, type, positionName, location, currency, skillsRequired, responsibilities, rounds, numOfDays, videoQuestions, shift, perks, skillAssessment, finalInterview, videoInterview, salaryType, minEducation, englishLevel, expRequired, incentive,
+      Company: company._id,
+      companyName: company.Name,
+      type,
+      positionName,
+      location,
+      currency,
+      skillsRequired,
+      responsibilities,
+      rounds,
+      numOfDays,
+      videoQuestions,
+      shift,
+      perks,
+      skillAssessment,
+      finalInterview,
+      videoInterview,
+      salaryType,
+      minEducation,
+      englishLevel,
+      expRequired,
+      incentive,
     };
 
     if (type === "internship") {
       jobData = {
-        ...jobData, internshipType, internshipStart, internshipDuration, internshipDurationFrequency, stipendType, stipend: req.body.stipend, ppo,
+        ...jobData,
+        internshipType,
+        internshipStart,
+        internshipDuration,
+        internshipDurationFrequency,
+        stipendType,
+        stipend: req.body.stipend,
+        ppo,
       };
     } else if (type === "job") {
-      jobData = { ...jobData, jobType, minExp, maxExp, minSalary, maxSalary, jobFrequency, openings, };
+      jobData = {
+        ...jobData,
+        jobType,
+        minExp,
+        maxExp,
+        minSalary,
+        maxSalary,
+        jobFrequency,
+        openings,
+      };
     }
     let newJob = new JobModel(jobData);
     await newJob.save();
-    
+
     // LinkedIn post data
     const linkedInPostData = {
       author: `urn:li:organization:${process.env.LINKEDIN_ORGANIZATION_ID}`,
-      lifecycleState: 'PUBLISHED',
+      lifecycleState: "PUBLISHED",
       specificContent: {
-        'com.linkedin.ugc.ShareContent': {
+        "com.linkedin.ugc.ShareContent": {
           shareCommentary: {
-            text: `We are excited to announce that ${company.Name} is hiring for ${positionName} on GetHire.AI!. Apply now !`
+            text: `We are excited to announce that ${company.Name} is hiring for ${positionName} on GetHire.AI!. Apply now !`,
           },
-          shareMediaCategory: 'NONE'
-        }
+          shareMediaCategory: "NONE",
+        },
       },
       visibility: {
-        'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-      }
-    };
-    
-    await fetch('https://api.linkedin.com/v2/ugcPosts', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.LINKEDIN_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
+        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC",
       },
-      body: JSON.stringify(linkedInPostData)
+    };
+
+    await fetch("https://api.linkedin.com/v2/ugcPosts", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.LINKEDIN_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(linkedInPostData),
     });
-
-
 
     return response.successResponse(
       res,
@@ -2245,5 +2307,5 @@ module.exports = {
   getImportDataById,
   addFunds,
   getFunds,
-  getBalance
+  getBalance,
 };
