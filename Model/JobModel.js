@@ -9,6 +9,7 @@ const JobSchema = new mongoose.Schema({
   // Common
   type: { type: String },
   positionName: { type: String },
+  description: { type: String },
   skillsRequired: { type: [String] },
   shift: { type: String },
   location: { type: String },

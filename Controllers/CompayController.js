@@ -667,6 +667,7 @@ const CreateJob = asynchandler(async (req, res) => {
       englishLevel,
       expRequired,
       incentive,
+      description,
     } = req.body;
 
     if (!positionName) {
@@ -683,6 +684,7 @@ const CreateJob = asynchandler(async (req, res) => {
 
     let jobData = {
       Company: company._id,
+      description,
       companyName: company.Name,
       type,
       positionName,
@@ -861,7 +863,7 @@ const UpdateJob = asynchandler(async (req, res) => {
       questionnaire,
       interviewAvailability,
       ExpirationDate,
-      Job_Description,
+      description,
       Skill_Exerience,
       Openings,
     } = req.body;
@@ -880,9 +882,6 @@ const UpdateJob = asynchandler(async (req, res) => {
     }
     if (jobPipeline) {
       GetJob.jobPipeline = jobPipeline;
-    }
-    if (addlocation) {
-      GetJob.addlocation = addlocation;
     }
     if (contractDetails) {
       GetJob.contractDetails = contractDetails;
@@ -923,8 +922,8 @@ const UpdateJob = asynchandler(async (req, res) => {
     if (ExpirationDate) {
       GetJob.ExpirationDate = ExpirationDate;
     }
-    if (Job_Description) {
-      GetJob.Job_Description = Job_Description;
+    if (description) {
+      GetJob.description = description;
     }
     if (Skill_Exerience) {
       GetJob.Skill_Exerience = Skill_Exerience;
