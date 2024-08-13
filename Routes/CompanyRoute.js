@@ -58,6 +58,7 @@ const {
   getFunds,
   addFunds,
   getBalance,
+  getAllCollege,
 } = require("../Controllers/CompayController");
 const upload = require("../Middleware/multer");
 const { GetAllStudents } = require("../Controllers/AdminController");
@@ -243,6 +244,9 @@ CompanyRouter.post("/import/assign", CompanyverifyToken, assignImportData);
 CompanyRouter.get("/wallet/transactions", CompanyverifyToken, getFunds);
 CompanyRouter.get("/wallet/balance", CompanyverifyToken, getBalance);
 CompanyRouter.post("/wallet/addfund", CompanyverifyToken, addFunds);
+
+// college
+CompanyRouter.get('/getallcollege',getAllCollege)
 
 // invite
 

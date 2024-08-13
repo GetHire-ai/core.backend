@@ -23,6 +23,12 @@ const ChatRoutes = require("./Routes/ChatRoutes");
 const AdminChatRoutes = require("./Routes/AdminChatRoutes");
 const NotificationRoutes = require("./Routes/NotificationRoutes");
 
+
+// College Routes
+
+app.use('/students', require('./Routes/student'));
+app.use('/college', require('./Routes/User'));
+
 app.use("/api/CompanyRoutes", CompanyRoutes);
 app.use("/api/StudentRoutes", StudentRoutes);
 app.use("/api/AdminRoutes", AdminRoutes);

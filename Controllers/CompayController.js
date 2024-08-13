@@ -16,6 +16,11 @@ const EmployeeModel = require("../Model/EmployeeModel");
 const HolidaysModel = require("../Model/HolidaysModel");
 const ImportedApplicationModel = require("../Model/ImportedApplicationModel");
 const CompanyFundsTransModel = require("../Model/CompanyFundsTrans");
+const {
+  CollegeData,
+  CollegeEvent,
+  Placementc,
+} = require("../Model/CollegeData");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -2249,6 +2254,15 @@ const getBalance = asynchandler(async (req, res) => {
   }
 });
 
+const getAllCollege = asynchandler(async (req, res) => {
+  try {
+    let data = await CollegeData.find();
+    response.successResponse(res, data, "colleges fetched successfully");
+  } catch (error) {
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+
 module.exports = {
   RegisterCompany,
   verifyEmailotp,
@@ -2307,4 +2321,5 @@ module.exports = {
   addFunds,
   getFunds,
   getBalance,
+  getAllCollege,
 };
