@@ -22,12 +22,12 @@ const TestRoutes = require("./Routes/TestRoutes");
 const ChatRoutes = require("./Routes/ChatRoutes");
 const AdminChatRoutes = require("./Routes/AdminChatRoutes");
 const NotificationRoutes = require("./Routes/NotificationRoutes");
-
+const BlogRoutes = require("./Routes/BlogRoutes");
 
 // College Routes
 
-app.use('/students', require('./Routes/student'));
-app.use('/college', require('./Routes/User'));
+app.use("/students", require("./Routes/student"));
+app.use("/college", require("./Routes/User"));
 
 app.use("/api/CompanyRoutes", CompanyRoutes);
 app.use("/api/StudentRoutes", StudentRoutes);
@@ -37,6 +37,7 @@ app.use("/api/testRoutes", TestRoutes);
 app.use("/api/chatRoutes", ChatRoutes);
 app.use("/api/adminchatRoutes", AdminChatRoutes);
 app.use("/api/notificationroutes", NotificationRoutes);
+app.use("/api/blogroutes", BlogRoutes);
 
 app.get("/", (req, res) => {
   res.send("Get Hire API is live!");
