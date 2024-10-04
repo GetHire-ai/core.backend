@@ -4,10 +4,8 @@ const JobApplySchema = new mongoose.Schema({
   CompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company" },
   JobId: { type: mongoose.Schema.Types.ObjectId, ref: "Jobs" },
   StudentId: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
-  Coverletter: { type: String, require: true },
-  Your_availability: { type: String, require: true },
-  relocate: { type: String, require: true },
   Custom_resume: { type: String, require: true },
+  Resume: { type: mongoose.Schema.Types.ObjectId, ref: "AIResume" },
   status: {
     type: String,
     enum: ["pending", "shortlisted", "selected", "rejected"],
@@ -32,10 +30,13 @@ const JobApplySchema = new mongoose.Schema({
     Time: { type: String, require: true },
     location: { type: String },
     notes: { type: String },
+    meetLink: { type: String, require: true },
   },
   isinterviewScheduled: { type: Boolean, default: false },
   isInterviewcompleted: { type: Boolean, default: false },
   IsSelectedforjob: { type: Boolean, default: false },
+  onboardingDocuments: [{ name: { type: String }, url: { type: String } }],
+  onboardingDocumentsAvailable: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -50,6 +50,20 @@ const JobSchema = new mongoose.Schema({
   minSalary: { type: Number, default: null },
   jobFrequency: { type: String },
   createdAt: { type: Date, default: Date.now },
+  invitedCandidates: [
+    {
+      candidateId: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
+      status: {
+        type: String,
+        enum: ["accepted", "rejected", "pending"],
+        default: "pending",
+      },
+    },
+  ],
+  notInterestedCandidates: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
+  ],
+  postedLinkedin: { type: Boolean, default: false },
 });
 
 const JobModel = mongoose.model("Jobs", JobSchema);

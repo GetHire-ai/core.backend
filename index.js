@@ -23,6 +23,7 @@ const ChatRoutes = require("./Routes/ChatRoutes");
 const AdminChatRoutes = require("./Routes/AdminChatRoutes");
 const NotificationRoutes = require("./Routes/NotificationRoutes");
 const BlogRoutes = require("./Routes/BlogRoutes");
+const { sendMessage } = require("./Utils/whatsApp");
 
 // College Routes
 
@@ -41,6 +42,7 @@ app.use("/api/blogroutes", BlogRoutes);
 
 app.get("/", (req, res) => {
   res.send("Get Hire API is live!");
+  sendMessage(917354406325, "messageBody");
 });
 
 // Connect to database

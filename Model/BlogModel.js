@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const BlogSchema = new mongoose.Schema(
   {
+    title:{ type: String },
+    tableofcontents:{ type: String },
     text: { type: String },
     image: { type: String },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],

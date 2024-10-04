@@ -13,6 +13,8 @@ const BookmarkModel = require("../Model/BookmarkModel");
 const TestModel = require("../Model/TestModel");
 const StudentTestResultModel = require("../Model/TestResultofaStudent");
 const NotificationCompanyModel = require("../Model/NotificationComModel");
+const CompanyModel = require("../Model/CompanyModel");
+const { sendMessage } = require("../Utils/whatsApp");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -454,9 +456,9 @@ const StudentEmailOtpLoginVerify = asynchandler(async (req, res) => {
 const GetStudentProfile = asynchandler(async (req, res) => {
   try {
     const Studentid = req.StudentId;
-
-    const GetStudent = await StudentModel.findById(Studentid);
-
+    const GetStudent = await StudentModel.findById(Studentid).populate(
+      "aiResumes"
+    );
     if (!GetStudent) {
       return Response.notFoundError(res, "Student Not Found");
     }
@@ -483,7 +485,7 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
       Name,
       Website,
       Gender,
-      Languages_you_know,
+      languages,
       introductionVideo,
       highestQualification,
       Education,
@@ -499,6 +501,11 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
       Joining_Date,
       Additional_Info,
       Address,
+      summary,
+      gender,
+      dob,
+      jobTitles,
+      locations,
     } = req.body;
 
     const GetStudent = await StudentModel.findById(Studentid);
@@ -561,6 +568,21 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
     if (Email) {
       GetStudent.Email = Email;
     }
+    if (dob) {
+      GetStudent.dob = dob;
+    }
+    if (locations) {
+      GetStudent.locations = locations;
+    }
+    if (jobTitles) {
+      GetStudent.jobTitles = jobTitles;
+    }
+    if (gender) {
+      GetStudent.gender = gender;
+    }
+    if (summary) {
+      GetStudent.summary = summary;
+    }
     if (uploadImg1) {
       GetStudent.Image = uploadImg1;
     }
@@ -573,8 +595,8 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
     if (Gender) {
       GetStudent.Gender = Gender;
     }
-    if (Languages_you_know) {
-      GetStudent.Languages_you_know = Languages_you_know;
+    if (languages) {
+      GetStudent.languages = languages;
     }
     if (uploadvideo) {
       GetStudent.introductionVideo = uploadvideo;
@@ -623,7 +645,6 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
     }
 
     const UpdatedStudent = await GetStudent.save();
-
     return response.successResponse(
       res,
       UpdatedStudent,
@@ -672,8 +693,7 @@ const ApplyForJob = asynchandler(async (req, res) => {
   try {
     const Studentid = req.StudentId;
 
-    const { JobId, CompanyId, Coverletter, Your_availability, relocate } =
-      req.body;
+    const { JobId, CompanyId, Resume, relocate } = req.body;
 
     const existingApplication = await JobApplyModel.findOne({
       StudentId: Studentid,
@@ -703,12 +723,12 @@ const ApplyForJob = asynchandler(async (req, res) => {
       StudentId: Studentid,
       JobId,
       CompanyId,
-      Coverletter,
-      Your_availability,
+      Resume,
       relocate,
       Custom_resume: uploadImg1,
     });
     let findJob = await JobModel.findById(JobId);
+    let findCompany = await CompanyModel.findById(CompanyId);
     let notification = await NotificationCompanyModel.create({
       CompanyId: CompanyId,
       StudentId: Studentid,
@@ -716,8 +736,11 @@ const ApplyForJob = asynchandler(async (req, res) => {
       text: `A new Student apply in your posted job for ${findJob?.positionName}.`,
     });
 
+    sendMessage(
+      findCompany.Number,
+      `1 student apply for your posted job ${findJob?.positionName}`
+    );
     const savedjob = await Job.save();
-
     if (!savedjob) {
       return response.validationError(res, "Not Applied for job");
     }

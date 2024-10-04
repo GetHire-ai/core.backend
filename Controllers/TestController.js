@@ -1,4 +1,6 @@
 const asynchandler = require("express-async-handler");
+const FormData = require("form-data");
+const fs = require("fs");
 const Test = require("../Model/TestModel");
 const Job = require("../Model/JobModel");
 const Student = require("../Model/StudentModel");
@@ -144,8 +146,7 @@ const getTestResultsByStudentId = asynchandler(async (req, res) => {
     const results = await TestResult.findOne({ student: id, job: jobId })
       .populate("job")
       .populate("student");
-
-    if (results.length === 0) {
+    if (!results) {
       return response.successResponse(
         res,
         results,
@@ -171,11 +172,10 @@ const getAITestResultsByStudentId = asynchandler(async (req, res) => {
       .populate("job")
       .populate("student");
 
-    return response.successResponse(
-      res,
-      results,
-      "AI Test results fetched successfully"
-    );
+    if (!results) {
+      return response.notFoundError(res, "result not found");
+    }
+    return response.successResponse(res, results, "AI Test results fetched successfully");
   } catch (error) {
     console.log(error);
     response.internalServerError(res, "Internal server error");
@@ -207,6 +207,34 @@ const getAITestResultsByJobId = asynchandler(async (req, res) => {
   }
 });
 
+const submitAudio = asynchandler(async (req, res) => {
+  try {
+    // console.log(req.file);
+    const formData = new FormData();
+    formData.append(
+      "audio",
+      fs.createReadStream(req.file.path),
+      req.file.originalname
+    );
+    const response = await fetch(
+      "https://shining-needed-bug.ngrok-free.app/transcribe",
+      {
+        method: "POST",
+        body: formData,
+        headers: {
+          ...formData.getHeaders(),
+        },
+      }
+    );
+    // console.log(result);
+    const result = await response.json();
+    res.json(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error submitting audio", error });
+  }
+});
+
 module.exports = {
   addTestResult,
   getResultById,
@@ -215,4 +243,5 @@ module.exports = {
   getTestResultsByStudentId,
   getAITestResultsByJobId,
   getAITestResultsByStudentId,
+  submitAudio,
 };

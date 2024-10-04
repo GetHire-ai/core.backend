@@ -59,10 +59,18 @@ const {
   addFunds,
   getBalance,
   getAllCollege,
+  interviewComplete,
 } = require("../Controllers/CompayController");
 const upload = require("../Middleware/multer");
 const { GetAllStudents } = require("../Controllers/AdminController");
 const { verifyToken } = require("otpless-node-js-auth-sdk");
+const {
+  getFilteredCandidates,
+  markStudentAsNotInterested,
+  inviteStudent,
+} = require("../Controllers/JobInvitationController");
+const { postOnLinkedin } = require("../Controllers/socialMediaPost");
+const { getOnboarding,updateOnboarding } = require("../Controllers/OnboardingController");
 
 const CompanyRouter = express.Router();
 
@@ -157,6 +165,11 @@ CompanyRouter.put(
   ScheduleInterview
 );
 CompanyRouter.get(
+  "/interview/interviewcomplete/:id",
+  CompanyverifyToken,
+  interviewComplete
+);
+CompanyRouter.get(
   "/GetAllScheduleInterviewofajob/:id",
   CompanyverifyToken,
   GetAllScheduleInterviewofajob
@@ -246,8 +259,25 @@ CompanyRouter.get("/wallet/balance", CompanyverifyToken, getBalance);
 CompanyRouter.post("/wallet/addfund", CompanyverifyToken, addFunds);
 
 // college
-CompanyRouter.get('/getallcollege',getAllCollege)
+CompanyRouter.get("/getallcollege", getAllCollege);
 
 // invite
+CompanyRouter.get("/getinvited/:jobId", getFilteredCandidates);
+CompanyRouter.get("/getinvited/invite/:jobId/:studentId", inviteStudent);
+CompanyRouter.get(
+  "/getinvited/notintrest/:jobId/:studentId",
+  markStudentAsNotInterested
+);
+
+// Share on social media
+
+CompanyRouter.post("/share-linkedin/:id", CompanyverifyToken, postOnLinkedin);
+
+// invite
+CompanyRouter.get(
+  "/get-onboarding/:jobId/:studentId/:companyId",
+  getOnboarding
+);
+CompanyRouter.post("/update-onboarding/:id", updateOnboarding);
 
 module.exports = CompanyRouter;

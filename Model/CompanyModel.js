@@ -28,6 +28,14 @@ const CompanySchema = new mongoose.Schema({
   Team: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Employee", required: true },
   ],
+  onboardinProcess: {
+    releaseMethod: { type: String },
+    offerLetterTemplate: { type: String },
+    acceptanceMethod: { type: String },
+    selectedDocuments: [{ type: String }],
+    orientationFile: { type: String },
+    orientationType: { type: String },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

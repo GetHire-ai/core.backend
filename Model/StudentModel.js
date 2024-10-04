@@ -8,10 +8,18 @@ const StudentSchema = new mongoose.Schema({
   Image: { type: String, require: true },
   Website: { type: String, require: true },
   Gender: { type: String, require: true },
-  Languages_you_know: { type: [String], required: true },
+  languages: [
+    {
+      language: { type: String },
+      level: { type: String },
+    },
+  ],
   introductionVideo: { type: String, require: true },
   Address: { type: String, require: true },
   highestQualification: { type: String, require: true },
+  dob: { type: String },
+  gender: { type: String },
+  summary: { type: String },
   locations: [{ type: String, require: true }],
   jobTitles: [{ type: String, require: true }],
   Education: [
@@ -28,17 +36,17 @@ const StudentSchema = new mongoose.Schema({
   ],
   JobDetails: [
     {
-      Type: { type: String, require: true },
-      Designation: { type: String, require: true },
-      Profile: { type: String, require: true },
-      Organization: { type: String, require: true },
-      Location: { type: String, require: true },
-      WorkFromHome: { type: Boolean, require: true },
-      NoticePeriod: { type: String, require: true },
-      Start_date: { type: String, require: true },
-      End_date: { type: String, require: true },
-      Currentlyworking: { type: Boolean, require: true },
-      Description: { type: String, require: true },
+      Type: { type: String, require: false },
+      Designation: { type: String, require: false },
+      Profile: { type: String, require: false },
+      Organization: { type: String, require: false },
+      Location: { type: String, require: false },
+      WorkFromHome: { type: Boolean, require: false },
+      NoticePeriod: { type: String, require: false },
+      Start_date: { type: String, require: false },
+      End_date: { type: String, require: false },
+      Currentlyworking: { type: Boolean, require: false },
+      Description: { type: String, require: false },
     },
   ],
   position_of_responsibility: { type: String, require: true },
@@ -67,9 +75,9 @@ const StudentSchema = new mongoose.Schema({
   ],
   Skill_Set: [
     {
-      Skill: { type: String, required: true },
-      Rate: { type: String, required: true, default: "Beginner" },
-      score: { type: Number, required: true, default: 0 },
+      Skill: { type: String },
+      Rate: { type: String, default: "Beginner" },
+      score: { type: Number, default: 0 },
     },
   ],
   Work_Samples: [
@@ -88,6 +96,12 @@ const StudentSchema = new mongoose.Schema({
   exprienceIn: { type: String, require: true },
   Joining_Date: { type: String, require: true },
   Resume: { type: String, require: true },
+  aiResumes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AIResume",
+    },
+  ],
 });
 
 const StudentModel = mongoose.model("Student", StudentSchema);

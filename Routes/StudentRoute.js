@@ -23,6 +23,18 @@ const {
   UpdateStudentSkillScore,
 } = require("../Controllers/StudentController");
 const upload = require("../Middleware/multer");
+const {
+  getAIResumeAll,
+  getAIResumeById,
+  createAIResume,
+  updateAIResumeById,
+  deleteAIResumeById,
+} = require("../Controllers/AIResumeController");
+const {
+  getInvitedJobs,
+  acceptInvite,
+  rejectInvite,
+} = require("../Controllers/JobInvitationController");
 
 const StudentRouter = express.Router();
 
@@ -89,5 +101,20 @@ StudentRouter.post(
   StudentverifyToken,
   Create_StudentTestResult
 );
+
+// AI resume
+
+StudentRouter.get("/ai-resume", StudentverifyToken, getAIResumeAll);
+StudentRouter.get("/ai-resume/:id", StudentverifyToken, getAIResumeById);
+StudentRouter.post("/ai-resume", StudentverifyToken, createAIResume);
+StudentRouter.put("/ai-resume/:id", StudentverifyToken, updateAIResumeById);
+StudentRouter.delete("/ai-resume/:id", StudentverifyToken, deleteAIResumeById);
+
+
+
+// invited jobs
+StudentRouter.get("/invitedjobs/all", StudentverifyToken, getInvitedJobs);
+StudentRouter.post("/invitedjobs/accept/:id", StudentverifyToken, acceptInvite);
+StudentRouter.post("/invitedjobs/reject/:id", StudentverifyToken, rejectInvite);
 
 module.exports = StudentRouter;

@@ -12,7 +12,7 @@ const {
   deleteComment,
 } = require("../Controllers/BlogController");
 
-router.get("/", getBlog);
+router.get("/getone/:id", getBlog);
 router.get("/all", getBlogs);
 router.post("/", upload.fields([{ name: "image" }]), createBlog);
 router.put("/:id", upload.fields([{ name: "image" }]), updateBlog);

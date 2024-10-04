@@ -16,11 +16,38 @@ const EmployeeModel = require("../Model/EmployeeModel");
 const HolidaysModel = require("../Model/HolidaysModel");
 const ImportedApplicationModel = require("../Model/ImportedApplicationModel");
 const CompanyFundsTransModel = require("../Model/CompanyFundsTrans");
+const StudentModel = require("../Model/StudentModel");
+const moment = require("moment");
 const {
   CollegeData,
   CollegeEvent,
   Placementc,
 } = require("../Model/CollegeData");
+const { sendMessage } = require("../Utils/whatsApp");
+const { google } = require("googleapis");
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+// Set credentials with the refresh token
+oauth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
+
+async function refreshAccessToken() {
+  try {
+    const { credentials } = await oauth2Client.refreshAccessToken();
+    oauth2Client.setCredentials(credentials);
+    console.log("New access token:", credentials.access_token);
+  } catch (error) {
+    // console.error("Error refreshing access token:", error);
+  }
+}
+
+refreshAccessToken();
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -738,32 +765,6 @@ const CreateJob = asynchandler(async (req, res) => {
     let newJob = new JobModel(jobData);
     await newJob.save();
 
-    // LinkedIn post data
-    const linkedInPostData = {
-      author: `urn:li:organization:${process.env.LINKEDIN_ORGANIZATION_ID}`,
-      lifecycleState: "PUBLISHED",
-      specificContent: {
-        "com.linkedin.ugc.ShareContent": {
-          shareCommentary: {
-            text: `We are excited to announce that ${company.Name} is hiring for ${positionName} on GetHire.AI!. Apply now !`,
-          },
-          shareMediaCategory: "NONE",
-        },
-      },
-      visibility: {
-        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC",
-      },
-    };
-
-    await fetch("https://api.linkedin.com/v2/ugcPosts", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.LINKEDIN_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(linkedInPostData),
-    });
-
     return response.successResponse(
       res,
       newJob,
@@ -780,8 +781,10 @@ const CreateJob = asynchandler(async (req, res) => {
 const GetAllJobs = asynchandler(async (req, res) => {
   try {
     const Companyid = req.userId;
-
-    const GetAllJobsofacompany = await JobModel.find({ Company: Companyid });
+    console.log(Companyid);
+    const GetAllJobsofacompany = await JobModel.find({
+      Company: Companyid,
+    }).sort({ createdAt: -1 });
 
     return response.successResponse(
       res,
@@ -800,8 +803,9 @@ const GetAllJobswithApplication = async (req, res) => {
   try {
     const Companyid = req.userId;
 
-    const GetAllJobsofacompany = await JobModel.find({ Company: Companyid });
-
+    const GetAllJobsofacompany = await JobModel.find({
+      Company: Companyid,
+    }).sort({ createdAt: -1 });
     const jobsWithApplicationCount = await Promise.all(
       GetAllJobsofacompany.map(async (job) => {
         const totalApplicationCount = await JobApplyModel.countDocuments({
@@ -849,92 +853,17 @@ const UpdateJob = asynchandler(async (req, res) => {
   try {
     const Companyid = req.userId;
     const { id } = req.params;
-
-    const {
-      positionName,
-      companyName,
-      jobPipeline,
-      addlocation,
-      contractDetails,
-      minSalary,
-      maxSalary,
-      Experience,
-      currency,
-      frequency,
-      skillsRequired,
-      Responsibilities,
-      rounds,
-      qualification,
-      questionnaire,
-      interviewAvailability,
-      ExpirationDate,
-      description,
-      Skill_Exerience,
-      Openings,
-    } = req.body;
-
+    console.log(req.body);
     const GetJob = await JobModel.findById(id);
 
     if (!GetJob) {
       return response.notFoundError(res, "Job Not found");
     }
 
-    if (positionName) {
-      GetJob.positionName = positionName;
-    }
-    if (companyName) {
-      GetJob.companyName = companyName;
-    }
-    if (jobPipeline) {
-      GetJob.jobPipeline = jobPipeline;
-    }
-    if (contractDetails) {
-      GetJob.contractDetails = contractDetails;
-    }
-    if (minSalary) {
-      GetJob.minSalary = minSalary;
-    }
-    if (maxSalary) {
-      GetJob.maxSalary = maxSalary;
-    }
-    if (Experience) {
-      GetJob.Experience = Experience;
-    }
-    if (currency) {
-      GetJob.currency = currency;
-    }
-    if (frequency) {
-      GetJob.frequency = frequency;
-    }
-    if (skillsRequired) {
-      GetJob.skillsRequired = skillsRequired;
-    }
-    if (Responsibilities) {
-      GetJob.Responsibilities = Responsibilities;
-    }
-    if (rounds) {
-      GetJob.rounds = rounds;
-    }
-    if (qualification) {
-      GetJob.qualification = qualification;
-    }
-    if (questionnaire) {
-      GetJob.questionnaire = questionnaire;
-    }
-    if (interviewAvailability) {
-      GetJob.interviewAvailability = interviewAvailability;
-    }
-    if (ExpirationDate) {
-      GetJob.ExpirationDate = ExpirationDate;
-    }
-    if (description) {
-      GetJob.description = description;
-    }
-    if (Skill_Exerience) {
-      GetJob.Skill_Exerience = Skill_Exerience;
-    }
-    if (Openings) {
-      GetJob.Openings = Openings;
+    for (const [key, value] of Object.entries(req.body)) {
+      if (value) {
+        GetJob[key] = value;
+      }
     }
 
     const Updatedjob = await GetJob.save();
@@ -1092,6 +1021,35 @@ const RejectJobApplication = asynchandler(async (req, res) => {
       JobId: jobapplication?.JobId?._id,
       text: `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`,
     });
+    let findStudent = await StudentModel.findById(
+      jobapplication?.StudentId?._id
+    );
+
+    const mailOptions = {
+      to: Email,
+      subject: "Job Application Rejected",
+      text: `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`,
+    };
+
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return response.internalServerError(
+          res,
+          "Error sending mail for job rejected"
+        );
+      } else {
+        return res.status(200).send({
+          status: true,
+          message: "response sent to email, please verify.",
+        });
+      }
+    });
+
+    sendMessage(
+      findStudent.Number,
+      `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`
+    );
 
     return response.successResponse(
       res,
@@ -1208,7 +1166,6 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
   try {
     const Companyid = req.userId;
     const { id } = req.params;
-
     const jobapplication = await JobApplyModel.findById(id)
       .populate("CompanyId")
       .populate("JobId");
@@ -1224,6 +1181,36 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
       JobId: jobapplication?.JobId?._id,
       text: `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`,
     });
+
+    let findStudent = await StudentModel.findById(
+      jobapplication?.StudentId?._id
+    );
+    sendMessage(
+      findStudent.Number,
+      `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`
+    );
+
+    const mailOptions = {
+      to: Email,
+      subject: "Job Application Shortlisted",
+      text: `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`,
+    };
+
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return response.internalServerError(
+          res,
+          "Error sending mail for job shortlist"
+        );
+      } else {
+        return res.status(200).send({
+          status: true,
+          message: "response sent to email.",
+        });
+      }
+    });
+
     return response.successResponse(
       res,
       jobapplication,
@@ -1346,15 +1333,81 @@ const ScheduleInterview = asynchandler(async (req, res) => {
     if (!jobApplication) {
       return response.notFoundError(res, "Job Application not found");
     }
-    jobApplication.interviewSchedule = interviewSchedule;
-    jobApplication.isinterviewScheduled = true;
-    await jobApplication.save();
+
     let notification = await Notification.create({
       CompanyId: Companyid,
       StudentId: jobApplication?.StudentId?._id,
       JobId: jobApplication?.JobId?._id,
       text: `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`,
     });
+
+    let findStudent = await StudentModel.findById(
+      jobApplication?.StudentId?._id
+    );
+
+    // const event = {
+    //   summary: `Interview for ${jobApplication?.JobId?.positionName}`,
+    //   description: `Interview scheduled by ${jobApplication?.CompanyId?.name}`,
+    //   start: {
+    //     dateTime: moment(interviewSchedule).format(),
+    //     timeZone: "UTC",
+    //   },
+    //   end: {
+    //     dateTime: moment(interviewSchedule).add(1, "hour").format(),
+    //     timeZone: "UTC",
+    //   },
+    //   conferenceData: {
+    //     createRequest: {
+    //       requestId: `meet-${jobApplication._id}`,
+    //       conferenceSolutionKey: {
+    //         type: "hangoutsMeet",
+    //       },
+    //     },
+    //   },
+    // };
+    // const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    // // console.log(calendar);
+    // const meeting = await calendar.events.insert({
+    //   calendarId: "primary",
+    //   resource: event,
+    //   conferenceDataVersion: 1,
+    // });
+    // const meetLink = meeting.data.hangoutLink;
+    // console.log(meetLink);
+
+    jobApplication.interviewSchedule = {
+      ...interviewSchedule,
+      // meetLink: meetLink,
+    };
+    
+    jobApplication.isinterviewScheduled = true;
+    await jobApplication.save();
+
+    sendMessage(
+      findStudent.Number,
+      `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`
+    );
+
+    // const mailOptions = {
+    //   to: jobApplication?.StudentId?.Email,
+    //   subject: "interview scheduled",
+    //   text: `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`,
+    // };
+
+    // transporter.sendMail(mailOptions, async function (error, info) {
+    //   if (error) {
+    //     console.log(error);
+    //     return response.internalServerError(
+    //       res,
+    //       "Error sending mail for job shortlist"
+    //     );
+    //   } else {
+    //     return res.status(200).send({
+    //       status: true,
+    //       message: "response sent to email.",
+    //     });
+    //   }
+    // });
 
     return response.successResponse(
       res,
@@ -1483,6 +1536,19 @@ const Resultonpending = asynchandler(async (req, res) => {
   }
 });
 
+const interviewComplete = asynchandler(async (req, res) => {
+  try {
+    const Companyid = req.userId;
+    let data = await JobApplyModel.findById(req.params.id);
+    data.isInterviewcompleted = true;
+    data.save();
+    return response.successResponse(res, data, "Interview updated");
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal server error");
+  }
+});
+
 //======================================[Selecte a Student ]============================
 
 const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
@@ -1504,11 +1570,39 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
     await jobApplication.save();
 
     let notification = await Notification.create({
-      CompanyId: Companyid,
+      CompanyId: companyId,
       StudentId: jobApplication?.StudentId?._id,
       JobId: jobApplication?.JobId?._id,
       text: `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`,
     });
+
+    let findStudent = await StudentModel.findById(
+      jobApplication?.StudentId?._id
+    );
+    const mailOptions = {
+      to: jobApplication?.StudentId?.Email,
+      subject: "you are selected",
+      text: `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`,
+    };
+
+    transporter.sendMail(mailOptions, async function (error, info) {
+      if (error) {
+        console.log(error);
+        return response.internalServerError(
+          res,
+          "Error sending mail for job shortlist"
+        );
+      } else {
+        return res.status(200).send({
+          status: true,
+          message: "response sent to email.",
+        });
+      }
+    });
+    sendMessage(
+      findStudent.Number,
+      `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`
+    );
 
     const { StudentId, JobId } = jobApplication;
     const job = await JobModel.findById(JobId);
@@ -2263,6 +2357,19 @@ const getAllCollege = asynchandler(async (req, res) => {
   }
 });
 
+const updateOnboarding = asynchandler(async (req, res) => {
+  try {
+    let id = req.userId;
+    let company = await CompanyModel.findById(id);
+    company.onboardinProcess = req.body;
+    company.save();
+    response.successResponse(res, company, "onboarding updated");
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal Server error");
+  }
+});
+
 module.exports = {
   RegisterCompany,
   verifyEmailotp,
@@ -2322,4 +2429,6 @@ module.exports = {
   getFunds,
   getBalance,
   getAllCollege,
+  updateOnboarding,
+  interviewComplete,
 };
