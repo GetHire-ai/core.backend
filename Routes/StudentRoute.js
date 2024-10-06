@@ -35,6 +35,12 @@ const {
   acceptInvite,
   rejectInvite,
 } = require("../Controllers/JobInvitationController");
+const {
+  getAllInterviews,
+  createInterview,
+  updateInterview,
+  deleteInterview,
+} = require("../Controllers/AIinterviewController");
 
 const StudentRouter = express.Router();
 
@@ -110,7 +116,12 @@ StudentRouter.post("/ai-resume", StudentverifyToken, createAIResume);
 StudentRouter.put("/ai-resume/:id", StudentverifyToken, updateAIResumeById);
 StudentRouter.delete("/ai-resume/:id", StudentverifyToken, deleteAIResumeById);
 
+// AI Mock Interview
 
+StudentRouter.get("/ai-interview", StudentverifyToken, getAllInterviews);
+StudentRouter.post("/ai-interview", StudentverifyToken, createInterview);
+StudentRouter.put("/ai-interview/:id", StudentverifyToken, updateInterview);
+StudentRouter.delete("/ai-interview/:id", StudentverifyToken, deleteInterview);
 
 // invited jobs
 StudentRouter.get("/invitedjobs/all", StudentverifyToken, getInvitedJobs);
