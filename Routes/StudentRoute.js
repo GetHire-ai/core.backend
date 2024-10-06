@@ -40,7 +40,7 @@ const {
   createInterview,
   updateInterview,
   deleteInterview,
-} = require("../Controllers/AIinterviewController");
+} = require("../Controllers/AIMockInterviewController");
 
 const StudentRouter = express.Router();
 

@@ -1,7 +1,7 @@
 const AIMockInterviewModel = require("../Model/AIMockInterviewModel");
 const response = require("../Middleware/responseMiddlewares");
 
-createInterview = async (req, res) => {
+const createInterview = async (req, res) => {
   try {
     const studentId = req.StudentId;
     const {
@@ -36,7 +36,7 @@ createInterview = async (req, res) => {
   }
 };
 
-getAllInterviews = async (req, res) => {
+const getAllInterviews = async (req, res) => {
   try {
     const studentId = req.StudentId;
     const interviews = await AIMockInterviewModel.find({
@@ -53,7 +53,7 @@ getAllInterviews = async (req, res) => {
 };
 
 // Update an AIMockInterview by ID
-updateInterview = async (req, res) => {
+const updateInterview = async (req, res) => {
   try {
     const studentId = req.StudentId;
     const interview = await AIMockInterviewModel.findById(req.params.id);
