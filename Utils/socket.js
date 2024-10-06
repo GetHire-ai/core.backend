@@ -4,7 +4,6 @@ const Conversation = require("../Model/ConversationModel");
 const AdminChat = require("../Model/AdminChatModel");
 const AdminConversation = require("../Model/AdminConversationModel");
 
-// Track online users
 let onlineUsers = {};
 
 module.exports = (server) => {
