@@ -182,7 +182,6 @@ const createAdmin = asynchandler(async (req, res) => {
       email,
       password: hashedPassword,
     });
-    console.log(data);
     response.successResponse(res, data, "Admin Created");
   } catch (error) {
     console.log(error);
@@ -217,7 +216,7 @@ const login = asynchandler(async (req, res) => {
       ...response,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     response.internalServerError(res, "Internal Server Error");
   }
 });

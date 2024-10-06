@@ -7,7 +7,6 @@ const path = require("path");
 
 // Create a new college entry
 const createCollege = async (req, res) => {
-  console.log(1);
   try {
     const college = new CollegeData(req.body);
     if (req.files) {
@@ -54,7 +53,7 @@ const updateCollegeById = async (req, res) => {
     const { userId } = req.params;
 
     // Validate ObjectId
-    console.log("userId:", userId);
+
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid ID format" });
     }
@@ -71,14 +70,11 @@ const updateCollegeById = async (req, res) => {
       }
     }
 
-    console.log("Updates:", updates); // Log the updates being made
-
     const college = await CollegeData.findOneAndUpdate({ userId }, updates, {
       new: true,
     });
 
     if (!college) {
-      console.log("College not found for userId:", userId); // Log if college is not found
       return res.status(404).json({ error: "College not found" });
     }
 
@@ -111,13 +107,6 @@ const eventUpload = async (req, res) => {
   const files = req.files;
 
   // Log input data for debugging
-  console.log("Received data:", {
-    id,
-    eventName,
-    description,
-    eventDate,
-    files,
-  });
   if (
     !eventName ||
     !description ||
@@ -180,7 +169,7 @@ const eventUpload = async (req, res) => {
 const getEventById = async (req, res) => {
   const { id } = req.params;
   const { eventName } = req.body;
-  console.log(req.body);
+
   try {
     const event = await CollegeEvent.findOne({
       userid: id,
@@ -201,9 +190,8 @@ const getEventById = async (req, res) => {
 
 const CollegeDataPlacementAdd = async (req, res) => {
   const { placements } = req.body;
-  console.log("PLACEMENT DATA SIS  ", placements);
+
   const { id } = req.params;
-  console.log(id);
 
   // Validate the placements array
   if (!Array.isArray(placements) || placements.length === 0) {
@@ -220,12 +208,10 @@ const CollegeDataPlacementAdd = async (req, res) => {
       !placement.ctc ||
       !placement.location
     ) {
-      return res
-        .status(400)
-        .send({
-          Status:
-            "Each placement object must contain placementCompany, studentName, ctc, and location",
-        });
+      return res.status(400).send({
+        Status:
+          "Each placement object must contain placementCompany, studentName, ctc, and location",
+      });
     }
   }
 
@@ -255,12 +241,10 @@ const CollegeDataPlacementAdd = async (req, res) => {
       error.message,
       error.stack
     );
-    res
-      .status(500)
-      .send({
-        Status: "Error while adding top placements",
-        Error: error.message,
-      });
+    res.status(500).send({
+      Status: "Error while adding top placements",
+      Error: error.message,
+    });
   }
 };
 const getCollegepalcement = async (req, res) => {

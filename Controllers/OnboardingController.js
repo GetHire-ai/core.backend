@@ -117,8 +117,6 @@ const updateOnboarding = asynchandler(async (req, res) => {
     if (req.body.currentStep) {
       onboardingDetails.currentStep = req.body.currentStep;
     }
-    console.log(req.body);
-    console.log(onboardingDetails)
     await onboardingDetails.save();
     response.successResponse(res, onboardingDetails, "Onboarding Updated");
   } catch (error) {

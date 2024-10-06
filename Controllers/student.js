@@ -2,7 +2,6 @@ const Student = require("../Model/studentdata");
 const xlsx = require("xlsx");
 const jwt = require("jsonwebtoken");
 
-
 exports.uploadStudentData = async (req, res) => {
   try {
     const filePath = req.file.path;
@@ -70,7 +69,6 @@ exports.uploadStudentData = async (req, res) => {
         updatedStudent,
         { upsert: true, new: true }
       );
-      console.log("Updating student record:", updatedStudent);
     }
 
     res.status(200).json({ msg: "Student data uploaded successfully" });
@@ -263,7 +261,6 @@ exports.uploadStudentData = async (req, res) => {
         updatedStudent,
         { upsert: true, new: true }
       );
-      console.log("Updating student record:", updatedStudent);
     }
 
     res.status(200).json({ msg: "Student data uploaded successfully" });

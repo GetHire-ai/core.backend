@@ -86,7 +86,6 @@ const updateAIResumeById = async (req, res) => {
 const deleteAIResumeById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(id);
     const aiResume = await AIResumeModel.findByIdAndDelete(id).exec();
 
     if (!aiResume) {

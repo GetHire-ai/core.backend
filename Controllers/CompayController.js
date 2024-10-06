@@ -41,7 +41,6 @@ async function refreshAccessToken() {
   try {
     const { credentials } = await oauth2Client.refreshAccessToken();
     oauth2Client.setCredentials(credentials);
-    console.log("New access token:", credentials.access_token);
   } catch (error) {
     // console.error("Error refreshing access token:", error);
   }
@@ -781,7 +780,6 @@ const CreateJob = asynchandler(async (req, res) => {
 const GetAllJobs = asynchandler(async (req, res) => {
   try {
     const Companyid = req.userId;
-    console.log(Companyid);
     const GetAllJobsofacompany = await JobModel.find({
       Company: Companyid,
     }).sort({ createdAt: -1 });
@@ -1379,7 +1377,7 @@ const ScheduleInterview = asynchandler(async (req, res) => {
       ...interviewSchedule,
       // meetLink: meetLink,
     };
-    
+
     jobApplication.isinterviewScheduled = true;
     await jobApplication.save();
 
