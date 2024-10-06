@@ -56,6 +56,13 @@ getAllInterviews = async (req, res) => {
 updateInterview = async (req, res) => {
   try {
     const studentId = req.StudentId;
+    const interview = await AIMockInterviewModel.findById(req.params.id);
+    if (!interview) {
+      return response.notFoundError(res, "Interview not found");
+    }
+    if (!interview.student.equals(studentId)) {
+      return response.errorResponse(res, "Error: Not authorized");
+    }
     const updated = await AIMockInterviewModel.findById(studentId);
     if (!updated) return response.notFoundError(res, "Interview not found");
     return response.successResponse(res, updated, "AI Mock Interview Updated");
