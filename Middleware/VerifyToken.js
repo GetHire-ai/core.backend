@@ -29,14 +29,14 @@ const StudentverifyToken = (req, res, next) => {
 
     jwt.verify(token, "Student", (err, decoded) => {
       if (err) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({ message: "Unauthorized " });
       } else {
         req.StudentId = decoded.StudentId; // Attach StudentId to request object
         next();
       }
     });
   } else {
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: "Unauthorized token is not found" });
   }
 };
 
