@@ -106,11 +106,8 @@ const verifyEmailotp = asynchandler(async (req, res) => {
 const RegisterCompany = asynchandler(async (req, res, next) => {
   try {
     const { Name, Email, Number, Password, firstName, lastName } = req.body;
-
+    
     if (!Name) {
-      return response.validationError(res, "Name is required");
-    }
-    if (!lastName) {
       return response.validationError(res, "Name is required");
     }
     if (!Email) {
@@ -120,7 +117,7 @@ const RegisterCompany = asynchandler(async (req, res, next) => {
       return response.validationError(res, "Number is required");
     }
     if (!Password) {
-      return response.validationError(res, "Number is required");
+      return response.validationError(res, "password is required");
     }
 
     const otp = generateOTP();
@@ -135,7 +132,6 @@ const RegisterCompany = asynchandler(async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(Password, 10);
-
     Company = new CompanyModel({
       Name,
       firstName,
