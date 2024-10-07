@@ -1,10 +1,9 @@
-const YOUR_ACCESS_TOKEN =
-  "EAAHQe10a3cwBOZBqbMFeAOqEkZB7K6hvQezTc2vwZBjoz50riUjDJvZCnkZCOVCQ5YgqOHdR91yHZCRkhHm53GpJKwS9FrOYGirju00wfSYJb0dfCpN0Ce4nDJEZBujnA9NAuwBSZCgI1eRQhRFnS53KhybubdM58NK4uJOAlGQM7JACzlG5gsAGnxZBqhQ8ExRkeqwZDZD";
-const Version = "v20.0";
-const Phone_Number_ID = "368030019735172";
 const axios = require("axios");
+const token = process.env.whatsAppToken
+const whatsappId = process.env.whatsAppNumber_ID;
+const Version = "v20.0";
 
-let sendMessage = async (recipientPhoneNumber, messageBody) => {
+let sendWhatsapp = async (recipientPhoneNumber, messageBody) => {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -18,12 +17,12 @@ let sendMessage = async (recipientPhoneNumber, messageBody) => {
 
   try {
     const response = await axios.post(
-      `https://graph.facebook.com/${Version}/${Phone_Number_ID}/messages`,
+      `https://graph.facebook.com/${Version}/${whatsappId}/messages`,
       data,
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${YOUR_ACCESS_TOKEN} `,
+          Authorization: `Bearer ${token} `,
         },
       }
     );
@@ -33,4 +32,4 @@ let sendMessage = async (recipientPhoneNumber, messageBody) => {
   }
 };
 
-module.exports = { sendMessage };
+module.exports = { sendWhatsapp };

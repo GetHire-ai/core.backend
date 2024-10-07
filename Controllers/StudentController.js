@@ -14,7 +14,8 @@ const TestModel = require("../Model/TestModel");
 const StudentTestResultModel = require("../Model/TestResultofaStudent");
 const NotificationCompanyModel = require("../Model/NotificationComModel");
 const CompanyModel = require("../Model/CompanyModel");
-const { sendMessage } = require("../Utils/whatsApp");
+const { sendWhatsapp } = require("../Utils/whatsApp");
+const { sendMail } = require("../Utils/sendMail");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -735,11 +736,14 @@ const ApplyForJob = asynchandler(async (req, res) => {
       JobId: JobId,
       text: `A new Student apply in your posted job for ${findJob?.positionName}.`,
     });
-
-    sendMessage(
+    sendMail(findCompany?.Email, `A new Student apply in your posted job for ${findJob?.positionName}.`, `A new Student apply in your posted job for ${findJob?.positionName}.`)
+    sendWhatsapp(
       findCompany.Number,
       `1 student apply for your posted job ${findJob?.positionName}`
     );
+
+
+
     const savedjob = await Job.save();
     if (!savedjob) {
       return response.validationError(res, "Not Applied for job");
