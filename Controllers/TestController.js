@@ -73,9 +73,6 @@ const addTestResult = asynchandler(async (req, res) => {
 const getResultById = asynchandler(async (req, res) => {
   try {
     const result = await TestResult.findById(req.params.id).populate("job");
-    if (!result) {
-      return response.notFoundError(res, "result not found");
-    }
     return response.successResponse(res, result, "result fetched successfully");
   } catch (error) {
     response.internalServerError(res, "internal server error");
@@ -146,14 +143,6 @@ const getTestResultsByStudentId = asynchandler(async (req, res) => {
     const results = await TestResult.findOne({ student: id, job: jobId })
       .populate("job")
       .populate("student");
-    if (!results) {
-      return response.successResponse(
-        res,
-        results,
-        "No  test results found for the given student ID"
-      );
-    }
-
     return response.successResponse(
       res,
       results,
@@ -171,10 +160,6 @@ const getAITestResultsByStudentId = asynchandler(async (req, res) => {
     const results = await AITestModel.findOne({ student: id, job: jobId })
       .populate("job")
       .populate("student");
-
-    if (!results) {
-      return response.notFoundError(res, "result not found");
-    }
     return response.successResponse(res, results, "AI Test results fetched successfully");
   } catch (error) {
     console.log(error);
@@ -188,14 +173,6 @@ const getAITestResultsByJobId = asynchandler(async (req, res) => {
     const results = await AITestModel.find({ job: jobId })
       .populate("job")
       .populate("student");
-
-    if (results.length === 0) {
-      return response.successResponse(
-        res,
-        results,
-        "No AI test results found for the given job ID"
-      );
-    }
 
     return response.successResponse(
       res,
