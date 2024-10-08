@@ -1169,15 +1169,11 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
   try {
     const companyId = req.userId;
     const { id } = req.params;
-
-    // Find the job by ID
     const job = await JobModel.findById(id);
 
     if (!job) {
       return response.notFoundError(res, "Job not found");
     }
-
-    // Find all shortlisted applicants for the specific job
     const applications = await JobApplyModel.find({
       JobId: id,
       isshortlisted: true,
@@ -1188,29 +1184,19 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
       return response.notFoundError(res, "No one applied for this job yet");
     }
 
-    // Prepare an array to hold the applications with test results
     const applicationsWithResultsPromises = applications.map(async (application) => {
-      const { StudentId, JobId } = application; // Destructure to get necessary IDs
-
-      // Fetch test results
+      const { StudentId, JobId } = application;
       const skillsResult = await TestModel.findOne({ student: StudentId._id, job: JobId._id });
       const aiTestResult = await AITestResultModel.findOne({ student: StudentId._id, job: JobId._id });
 
-      // Return a new object that combines application details with test results
+
       return {
-        ...application.toObject(), // Convert Mongoose document to plain object
-        skillsTestResult: skillsResult || null,  // Skills test result
-        aiTestResult: aiTestResult || null,      // AI test result
+        ...application.toObject(),
+        skillsTestResult: skillsResult || null,
+        aiTestResult: aiTestResult || null,
       };
     });
-
-    // Await all promises for test results
     const applicationsWithResults = await Promise.all(applicationsWithResultsPromises);
-
-    // Log the final array for debugging
-    console.log("Applications with Results:", applicationsWithResults[0]);
-
-    // Send the response after all promises have resolved
     return response.successResponse(
       res,
       applicationsWithResults,
