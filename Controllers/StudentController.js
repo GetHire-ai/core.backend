@@ -751,7 +751,7 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
     // console.log(meetLink);
 
     jobApplication.interviewSchedule = {
-      ...interviewSchedule,
+      ...jobApplication.interviewSchedule,
       date, Time
       // meetLink: meetLink,
     };
@@ -770,11 +770,10 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
       `Your interview rescheduled job application for ${jobApplication?.JobId?.positionName} .`
     );
     sendMail(
-      findStudent?.jobApplication?.CompanyId?.Email,
+      jobApplication?.CompanyId?.Email,
       "interview rescheduled",
       `interview is rescheduled by candidate job application for ${jobApplication?.JobId?.positionName} .`,
     );
-
     return response.successResponse(
       res,
       jobApplication,
