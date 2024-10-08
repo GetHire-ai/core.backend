@@ -696,7 +696,7 @@ const UpdateStudentSkillScore = asynchandler(async (req, res) => {
 const ReScheduleInterview = asynchandler(async (req, res) => {
   try {
     const Studentid = req.StudentId;
-    const { interviewSchedule } = req.body;
+    const { date, Time } = req.body;
     const jobApplication = await JobApplyModel.findById(req.params.id)
       .populate("CompanyId")
       .populate("JobId");
@@ -752,6 +752,7 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
 
     jobApplication.interviewSchedule = {
       ...interviewSchedule,
+      date, Time
       // meetLink: meetLink,
     };
 
