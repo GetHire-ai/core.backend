@@ -1167,35 +1167,62 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
 
 const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
   try {
-    const Companyid = req.userId;
+    const companyId = req.userId;
     const { id } = req.params;
 
-    const getjob = await JobModel.findById(id);
+    // Find the job by ID
+    const job = await JobModel.findById(id);
 
-    if (!getjob) {
-      return response.notFoundError(res, "Job Not found");
+    if (!job) {
+      return response.notFoundError(res, "Job not found");
     }
 
-    const GetAllAppiledStudent = await JobApplyModel.find({
+    // Find all shortlisted applicants for the specific job
+    const applications = await JobApplyModel.find({
       JobId: id,
       isshortlisted: true,
       IsSelectedforjob: false,
     }).populate("StudentId");
 
-    if (!GetAllAppiledStudent) {
-      return response.notFoundError(res, "No One Appiled for this Job yet");
+    if (!applications || applications.length === 0) {
+      return response.notFoundError(res, "No one applied for this job yet");
     }
 
+    // Prepare an array to hold the applications with test results
+    const applicationsWithResultsPromises = applications.map(async (application) => {
+      const { StudentId, JobId } = application; // Destructure to get necessary IDs
+
+      // Fetch test results
+      const skillsResult = await TestModel.findOne({ student: StudentId._id, job: JobId._id });
+      const aiTestResult = await AITestResultModel.findOne({ student: StudentId._id, job: JobId._id });
+
+      // Return a new object that combines application details with test results
+      return {
+        ...application.toObject(), // Convert Mongoose document to plain object
+        skillsTestResult: skillsResult || null,  // Skills test result
+        aiTestResult: aiTestResult || null,      // AI test result
+      };
+    });
+
+    // Await all promises for test results
+    const applicationsWithResults = await Promise.all(applicationsWithResultsPromises);
+
+    // Log the final array for debugging
+    console.log("Applications with Results:", applicationsWithResults[0]);
+
+    // Send the response after all promises have resolved
     return response.successResponse(
       res,
-      GetAllAppiledStudent,
-      "Get all Applications"
+      applicationsWithResults,
+      "Get all applications with results for the job."
     );
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return response.internalServerError(res, "Internal server error");
   }
 });
+
+
 
 const GetAllshortlistStudentsofAllJobs = asynchandler(async (req, res) => {
   try {
@@ -1673,15 +1700,15 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
         ...application.toObject(), // Convert Mongoose document to plain object
         skillsTestResult: skillsResult || null,
         aiTestResult: aiTestResult || null,
-        avaregeScore: (skillsResult.scorePercentage + aiTestResult.score)/2
+        avaregeScore: (skillsResult.scorePercentage + aiTestResult.score) / 2
       };
     });
 
     // Await all promises for test results and create a fresh array
     allApplicationsWithResults = await Promise.all(studentTestPromises);
 
-    // Log the final array for debugging
-    console.log("Final Applications with Results:", allApplicationsWithResults);
+
+
 
     // Send the response after all promises have resolved
     return response.successResponse(
