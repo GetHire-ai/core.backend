@@ -21,6 +21,7 @@ const {
   CreateStudentOtpforSignup,
   verifyotpforsignup,
   UpdateStudentSkillScore,
+  ReScheduleInterview,
 } = require("../Controllers/StudentController");
 const upload = require("../Middleware/multer");
 const {
@@ -127,5 +128,10 @@ StudentRouter.delete("/ai-interview/:id", StudentverifyToken, deleteInterview);
 StudentRouter.get("/invitedjobs/all", StudentverifyToken, getInvitedJobs);
 StudentRouter.post("/invitedjobs/accept/:id", StudentverifyToken, acceptInvite);
 StudentRouter.post("/invitedjobs/reject/:id", StudentverifyToken, rejectInvite);
+
+// Reschedule interview
+StudentRouter.post("/interview/reschedule/:id", StudentverifyToken, ReScheduleInterview);
+
+
 
 module.exports = StudentRouter;

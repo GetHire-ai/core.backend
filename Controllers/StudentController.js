@@ -13,9 +13,11 @@ const BookmarkModel = require("../Model/BookmarkModel");
 const TestModel = require("../Model/TestModel");
 const StudentTestResultModel = require("../Model/TestResultofaStudent");
 const NotificationCompanyModel = require("../Model/NotificationComModel");
+const Notification = require("../Model/NotificationModel");
 const CompanyModel = require("../Model/CompanyModel");
 const { sendWhatsapp } = require("../Utils/whatsApp");
 const { sendMail } = require("../Utils/sendMail");
+
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -656,6 +658,7 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
+
 const UpdateStudentSkillScore = asynchandler(async (req, res) => {
   try {
     const studentId = req.StudentId;
@@ -687,6 +690,101 @@ const UpdateStudentSkillScore = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
+
+//============================[ReSchedule Interview ]==============================
+
+const ReScheduleInterview = asynchandler(async (req, res) => {
+  try {
+    const Studentid = req.StudentId;
+    const { interviewSchedule } = req.body;
+    const jobApplication = await JobApplyModel.findById(req.params.id)
+      .populate("CompanyId")
+      .populate("JobId");
+    if (!jobApplication) {
+      return response.notFoundError(res, "Job Application not found");
+    }
+    await Notification.create({
+      CompanyId: Studentid,
+      StudentId: jobApplication?.StudentId?._id,
+      JobId: jobApplication?.JobId?._id,
+      text: `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`,
+    });
+    await NotificationCompanyModel.create({
+      CompanyId: jobApplication?.CompanyId?._id,
+      StudentId: Studentid,
+      JobId: jobApplication?.JobId?._id,
+      text: `interview is rescheduled by candidate job application for ${jobApplication?.JobId?.positionName} .`,
+    });
+
+    let findStudent = await StudentModel.findById(
+      jobApplication?.StudentId?._id
+    );
+
+    // const event = {
+    //   summary: `Interview for ${jobApplication?.JobId?.positionName} is reshcheduled`,
+    //   description: `Interview scheduled by ${jobApplication?.CompanyId?.name} is reshcheduled`,
+    //   start: {
+    //     dateTime: moment(interviewSchedule).format(),
+    //     timeZone: "UTC",
+    //   },
+    //   end: {
+    //     dateTime: moment(interviewSchedule).add(1, "hour").format(),
+    //     timeZone: "UTC",
+    //   },
+    //   conferenceData: {
+    //     createRequest: {
+    //       requestId: `meet-${jobApplication._id}`,
+    //       conferenceSolutionKey: {
+    //         type: "hangoutsMeet",
+    //       },
+    //     },
+    //   },
+    // };
+    // const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    // // console.log(calendar);
+    // const meeting = await calendar.events.insert({
+    //   calendarId: "primary",
+    //   resource: event,
+    //   conferenceDataVersion: 1,
+    // });
+    // const meetLink = meeting.data.hangoutLink;
+    // console.log(meetLink);
+
+    jobApplication.interviewSchedule = {
+      ...interviewSchedule,
+      // meetLink: meetLink,
+    };
+
+    jobApplication.isinterviewScheduled = true;
+    await jobApplication.save();
+
+    sendWhatsapp(
+      findStudent.Number,
+      `Your interview is rescheduled job application for ${jobApplication?.JobId?.positionName} .`
+    );
+
+    sendMail(
+      findStudent?.Email,
+      "interview rescheduled",
+      `Your interview rescheduled job application for ${jobApplication?.JobId?.positionName} .`
+    );
+    sendMail(
+      findStudent?.jobApplication?.CompanyId?.Email,
+      "interview rescheduled",
+      `interview is rescheduled by candidate job application for ${jobApplication?.JobId?.positionName} .`,
+    );
+
+    return response.successResponse(
+      res,
+      jobApplication,
+      "Interview reschedule updated successfully"
+    );
+  } catch (error) {
+    console.log(error);
+    return response.internalServerError(res, "Internal server error");
+  }
+});
+
 
 //============================[ApplyForJob ]==============================
 
@@ -1042,4 +1140,5 @@ module.exports = {
   CreateStudentOtpforSignup,
   verifyotpforsignup,
   UpdateStudentSkillScore,
+  ReScheduleInterview
 };
