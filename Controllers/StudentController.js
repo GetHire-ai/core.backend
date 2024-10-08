@@ -695,34 +695,18 @@ const UpdateStudentSkillScore = asynchandler(async (req, res) => {
 
 const ReScheduleInterview = asynchandler(async (req, res) => {
   try {
-    const Studentid = req.StudentId;
-    const { date, Time } = req.body;
+    const { StudentId, date, Time } = req.body;
     const jobApplication = await JobApplyModel.findById(req.params.id)
       .populate("CompanyId")
       .populate("JobId");
+
     if (!jobApplication) {
       return response.notFoundError(res, "Job Application not found");
     }
-    await Notification.create({
-      CompanyId: Studentid,
-      StudentId: jobApplication?.StudentId?._id,
-      JobId: jobApplication?.JobId?._id,
-      text: `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`,
-    });
-    await NotificationCompanyModel.create({
-      CompanyId: jobApplication?.CompanyId?._id,
-      StudentId: Studentid,
-      JobId: jobApplication?.JobId?._id,
-      text: `interview is rescheduled by candidate job application for ${jobApplication?.JobId?.positionName} .`,
-    });
-
-    let findStudent = await StudentModel.findById(
-      jobApplication?.StudentId?._id
-    );
 
     // const event = {
-    //   summary: `Interview for ${jobApplication?.JobId?.positionName} is reshcheduled`,
-    //   description: `Interview scheduled by ${jobApplication?.CompanyId?.name} is reshcheduled`,
+    //   summary: Interview for ${jobApplication?.JobId?.positionName} is reshcheduled,
+    //   description: Interview scheduled by ${jobApplication?.CompanyId?.name} is reshcheduled,
     //   start: {
     //     dateTime: moment(interviewSchedule).format(),
     //     timeZone: "UTC",
@@ -733,7 +717,7 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
     //   },
     //   conferenceData: {
     //     createRequest: {
-    //       requestId: `meet-${jobApplication._id}`,
+    //       requestId: meet-${jobApplication._id},
     //       conferenceSolutionKey: {
     //         type: "hangoutsMeet",
     //       },
@@ -750,40 +734,49 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
     // const meetLink = meeting.data.hangoutLink;
     // console.log(meetLink);
 
-    jobApplication.interviewSchedule = {
-      ...jobApplication.interviewSchedule,
-      date, Time
-      // meetLink: meetLink,
-    };
+    // jobApplication.interviewSchedule = {
+    //   ...jobApplication.interviewSchedule,
+    //   date, Time
+    // meetLink: meetLink,
+    // };
 
+    // Notifications
+    await Notification.create({
+      CompanyId: StudentId,
+      StudentId: jobApplication?.StudentId?._id,
+      JobId: jobApplication?.JobId?._id,
+      text: `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`,
+    });
+
+    await NotificationCompanyModel.create({
+      CompanyId: jobApplication?.CompanyId?._id,
+      StudentId,
+      JobId: jobApplication?.JobId?._id,
+      text: `The interview for ${jobApplication?.JobId?.positionName} has been rescheduled by the candidate.`,
+    });
+
+    const findStudent = await StudentModel.findById(jobApplication?.StudentId?._id);
+
+    // Update interview schedule
+    jobApplication.interviewSchedule = {
+      ...jobApplication.interviewSchedule, // Keep existing properties
+      date,
+      Time
+    };
     jobApplication.isinterviewScheduled = true;
     await jobApplication.save();
+    // Send notifications
+    sendWhatsapp(findStudent.Number, `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`);
+    sendMail(findStudent?.Email, "Interview Rescheduled", `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`);
+    sendMail(jobApplication?.CompanyId?.Email, "Interview Rescheduled", `The interview for ${jobApplication?.JobId?.positionName} has been rescheduled by the candidate.`);
 
-    sendWhatsapp(
-      findStudent.Number,
-      `Your interview is rescheduled job application for ${jobApplication?.JobId?.positionName} .`
-    );
-
-    sendMail(
-      findStudent?.Email,
-      "interview rescheduled",
-      `Your interview rescheduled job application for ${jobApplication?.JobId?.positionName} .`
-    );
-    sendMail(
-      jobApplication?.CompanyId?.Email,
-      "interview rescheduled",
-      `interview is rescheduled by candidate job application for ${jobApplication?.JobId?.positionName} .`,
-    );
-    return response.successResponse(
-      res,
-      jobApplication,
-      "Interview reschedule updated successfully"
-    );
+    return response.successResponse(res, jobApplication, "Interview rescheduled successfully");
   } catch (error) {
-    console.log(error);
+    console.error("Error:", error);
     return response.internalServerError(res, "Internal server error");
   }
 });
+
 
 
 //============================[ApplyForJob ]==============================
