@@ -23,7 +23,9 @@ const {
   CollegeEvent,
   Placementc,
 } = require("../Model/CollegeData");
-const { sendMessage } = require("../Utils/whatsApp");
+const { sendWhatsapp } = require("../Utils/whatsApp");
+const { sendMail } = require("../Utils/sendMail");
+
 const { google } = require("googleapis");
 
 const oauth2Client = new google.auth.OAuth2(
@@ -76,23 +78,11 @@ const verifyEmailotp = asynchandler(async (req, res) => {
       return response.validationError(res, "Email Id Already Exist !");
     }
 
-    const mailOptions = {
-      to: Email,
-      subject: "OTP Verification",
-      text: `Your OTP for account verification is: ${otp}`,
-    };
-
-    transporter.sendMail(mailOptions, async function (error, info) {
-      if (error) {
-        console.log(error);
-        return response.internalServerError(res, "Error sending OTP");
-      } else {
-        return res.status(200).send({
-          status: true,
-          message: "OTP sent to email, please verify.",
-        });
-      }
-    });
+    sendMail(
+      Email,
+      "OTP Verification from GetHire.AI",
+      `Your OTP for account verification is: ${otp}`
+    );
   } catch (error) {
     return res.status(500).send({
       status: false,
@@ -106,7 +96,7 @@ const verifyEmailotp = asynchandler(async (req, res) => {
 const RegisterCompany = asynchandler(async (req, res, next) => {
   try {
     const { Name, Email, Number, Password, firstName, lastName } = req.body;
-    
+
     if (!Name) {
       return response.validationError(res, "Name is required");
     }
@@ -379,23 +369,11 @@ const CompanyLogin = asynchandler(async (req, res) => {
 
     await CompanyModel.findOneAndUpdate({ Email }, { otp: otp });
 
-    const mailOptions = {
-      to: Email,
-      subject: "OTP Verification",
-      text: `Your OTP for account verification is: ${otp}`,
-    };
-
-    transporter.sendMail(mailOptions, async function (error, info) {
-      if (error) {
-        console.log(error);
-        return response.internalServerError(res, "Error sending OTP");
-      } else {
-        return res.status(200).send({
-          status: true,
-          message: "OTP sent to email, please verify.",
-        });
-      }
-    });
+    sendMail(
+      Email,
+      "OTP Verification from GetHire.AI",
+      `Your OTP for account verification is: ${otp}`
+    );
   } catch (error) {
     return res.status(500).send({
       status: false,
@@ -1015,32 +993,17 @@ const RejectJobApplication = asynchandler(async (req, res) => {
       JobId: jobapplication?.JobId?._id,
       text: `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`,
     });
+
     let findStudent = await StudentModel.findById(
       jobapplication?.StudentId?._id
     );
 
-    const mailOptions = {
-      to: Email,
-      subject: "Job Application Rejected",
-      text: `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`,
-    };
-
-    transporter.sendMail(mailOptions, async function (error, info) {
-      if (error) {
-        console.log(error);
-        return response.internalServerError(
-          res,
-          "Error sending mail for job rejected"
-        );
-      } else {
-        return res.status(200).send({
-          status: true,
-          message: "response sent to email, please verify.",
-        });
-      }
-    });
-
-    sendMessage(
+    sendMail(
+      Email,
+      "Job Application Rejected",
+      `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`
+    );
+    sendWhatsapp(
       findStudent.Number,
       `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`
     );
@@ -1179,32 +1142,16 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
     let findStudent = await StudentModel.findById(
       jobapplication?.StudentId?._id
     );
-    sendMessage(
+    sendWhatsapp(
       findStudent.Number,
       `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`
     );
 
-    const mailOptions = {
-      to: Email,
-      subject: "Job Application Shortlisted",
-      text: `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`,
-    };
-
-    transporter.sendMail(mailOptions, async function (error, info) {
-      if (error) {
-        console.log(error);
-        return response.internalServerError(
-          res,
-          "Error sending mail for job shortlist"
-        );
-      } else {
-        return res.status(200).send({
-          status: true,
-          message: "response sent to email.",
-        });
-      }
-    });
-
+    sendMail(
+      Email,
+      "Job Application Shortlisted on GetHire AI",
+      `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`
+    );
     return response.successResponse(
       res,
       jobapplication,
@@ -1377,32 +1324,16 @@ const ScheduleInterview = asynchandler(async (req, res) => {
     jobApplication.isinterviewScheduled = true;
     await jobApplication.save();
 
-    sendMessage(
+    sendWhatsapp(
       findStudent.Number,
       `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`
     );
 
-    // const mailOptions = {
-    //   to: jobApplication?.StudentId?.Email,
-    //   subject: "interview scheduled",
-    //   text: `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`,
-    // };
-
-    // transporter.sendMail(mailOptions, async function (error, info) {
-    //   if (error) {
-    //     console.log(error);
-    //     return response.internalServerError(
-    //       res,
-    //       "Error sending mail for job shortlist"
-    //     );
-    //   } else {
-    //     return res.status(200).send({
-    //       status: true,
-    //       message: "response sent to email.",
-    //     });
-    //   }
-    // });
-
+    sendMail(
+      jobApplication?.StudentId?.Email,
+      "interview scheduled",
+      `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`
+    );
     return response.successResponse(
       res,
       jobApplication,
@@ -1573,27 +1504,13 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
     let findStudent = await StudentModel.findById(
       jobApplication?.StudentId?._id
     );
-    const mailOptions = {
-      to: jobApplication?.StudentId?.Email,
-      subject: "you are selected",
-      text: `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`,
-    };
 
-    transporter.sendMail(mailOptions, async function (error, info) {
-      if (error) {
-        console.log(error);
-        return response.internalServerError(
-          res,
-          "Error sending mail for job shortlist"
-        );
-      } else {
-        return res.status(200).send({
-          status: true,
-          message: "response sent to email.",
-        });
-      }
-    });
-    sendMessage(
+    sendMail(
+      jobApplication?.StudentId?.Email,
+      "you are selected",
+      `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`
+    );
+    sendWhatsapp(
       findStudent.Number,
       `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`
     );
