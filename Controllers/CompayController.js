@@ -986,8 +986,7 @@ const RejectJobApplication = asynchandler(async (req, res) => {
     jobapplication.isshortlisted = false;
     jobapplication.status = "rejected";
     await jobapplication.save();
-
-    let notification = await Notification.create({
+    await Notification.create({
       CompanyId: Companyid,
       StudentId: jobapplication?.StudentId?._id,
       JobId: jobapplication?.JobId?._id,
@@ -999,7 +998,7 @@ const RejectJobApplication = asynchandler(async (req, res) => {
     );
 
     sendMail(
-      Email,
+      findStudent?.Email,
       "Job Application Rejected",
       `Your job application for ${jobapplication?.JobId?.positionName} is Rejected .`
     );
@@ -1132,7 +1131,7 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
     jobapplication.isshortlisted = true;
     jobapplication.status = "shortlisted";
     await jobapplication.save();
-    let notification = await Notification.create({
+    await Notification.create({
       CompanyId: Companyid,
       StudentId: jobapplication?.StudentId?._id,
       JobId: jobapplication?.JobId?._id,
@@ -1148,8 +1147,8 @@ const shortlistJobApplication = asynchandler(async (req, res) => {
     );
 
     sendMail(
-      Email,
-      "Job Application Shortlisted on GetHire AI",
+      findStudent?.Email,
+      `congrats your application is shortlisted`,
       `Your job application for ${jobapplication?.JobId?.positionName} is shortlisted`
     );
     return response.successResponse(
@@ -1273,9 +1272,8 @@ const ScheduleInterview = asynchandler(async (req, res) => {
       .populate("JobId");
     if (!jobApplication) {
       return response.notFoundError(res, "Job Application not found");
-    }
-
-    let notification = await Notification.create({
+    } 
+    await Notification.create({
       CompanyId: Companyid,
       StudentId: jobApplication?.StudentId?._id,
       JobId: jobApplication?.JobId?._id,
@@ -1330,7 +1328,7 @@ const ScheduleInterview = asynchandler(async (req, res) => {
     );
 
     sendMail(
-      jobApplication?.StudentId?.Email,
+      findStudent?.Email,
       "interview scheduled",
       `Your interview scheduled job application for ${jobApplication?.JobId?.positionName} .`
     );
