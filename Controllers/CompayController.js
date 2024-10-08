@@ -10,7 +10,8 @@ const cloudinary = require("../Middleware/Cloudinary");
 const nodemailer = require("nodemailer");
 const Notification = require("../Model/NotificationModel");
 const JobModel = require("../Model/JobModel");
-const TestModel = require("../Model/TestModel");
+const TestModel = require("../Model/TestResultofaStudent");
+const AITestResultModel = require("../Model/AITestResult");
 const JobApplyModel = require("../Model/JobApplyModel");
 const EmployeeModel = require("../Model/EmployeeModel");
 const HolidaysModel = require("../Model/HolidaysModel");
@@ -1272,7 +1273,7 @@ const ScheduleInterview = asynchandler(async (req, res) => {
       .populate("JobId");
     if (!jobApplication) {
       return response.notFoundError(res, "Job Application not found");
-    } 
+    }
     await Notification.create({
       CompanyId: Companyid,
       StudentId: jobApplication?.StudentId?._id,
@@ -1633,36 +1634,68 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
   try {
     const companyId = req.userId;
 
+    // Find all jobs associated with the company
     const jobsOfCompany = await JobModel.find({ Company: companyId });
 
-    let allShortlistedStudents = [];
+    // Initialize an array to hold the final applications with results
+    let allApplicationsWithResults = [];
 
-    for (const job of jobsOfCompany) {
+    // Iterate over each job of the company and fetch all shortlisted students
+    const shortlistedStudentsPromises = jobsOfCompany.map(async (job) => {
       const jobId = job._id;
 
-      const shortlistedStudents = await JobApplyModel.find({
+      // Find all shortlisted students for the job
+      return await JobApplyModel.find({
         JobId: jobId,
         isshortlisted: true,
         IsSelectedforjob: false,
       })
         .populate("StudentId")
         .populate("JobId");
+    });
 
-      if (shortlistedStudents.length > 0) {
-        allShortlistedStudents.push(...shortlistedStudents);
-      }
-    }
+    // Await all promises for fetching shortlisted students
+    const shortlistedResults = await Promise.all(shortlistedStudentsPromises);
 
+    // Flatten the array of shortlisted students
+    const allShortlistedStudents = shortlistedResults.flat();
+
+    // Prepare test results promises for each shortlisted student
+    const studentTestPromises = allShortlistedStudents.map(async (application) => {
+      const { StudentId, JobId } = application; // Destructure application
+
+      // Find skills and AI test results based on student and job IDs
+      const skillsResult = await TestModel.findOne({ student: StudentId._id, job: JobId._id });
+      const aiTestResult = await AITestResultModel.findOne({ student: StudentId._id, job: JobId._id });
+
+      // Create a new object with the full application data and results
+      return {
+        ...application.toObject(), // Convert Mongoose document to plain object
+        skillsTestResult: skillsResult || null,
+        aiTestResult: aiTestResult || null,
+        avaregeScore: (skillsResult.scorePercentage + aiTestResult.score)/2
+      };
+    });
+
+    // Await all promises for test results and create a fresh array
+    allApplicationsWithResults = await Promise.all(studentTestPromises);
+
+    // Log the final array for debugging
+    console.log("Final Applications with Results:", allApplicationsWithResults);
+
+    // Send the response after all promises have resolved
     return response.successResponse(
       res,
-      allShortlistedStudents,
-      "Get all shortlisted students for all jobs of the company."
+      allApplicationsWithResults,
+      "Get all applications with results for all jobs of the company."
     );
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return response.internalServerError(res, "Internal server error");
   }
 });
+
+
 
 //=============================[ Get Company Team Details ]============================
 
