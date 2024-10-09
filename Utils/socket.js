@@ -25,8 +25,9 @@ module.exports = (server) => {
     socket.on("userConnected", (userId) => {
       onlineUsers[userId] = socket.id;
       io.emit("userStatus", { userId, online: true });
+      console.log("conntected", onlineUsers);
     });
-
+    
     socket.on("userDisconnected", () => {
       const userId = Object.keys(onlineUsers).find(
         (key) => onlineUsers[key] === socket.id
@@ -35,6 +36,7 @@ module.exports = (server) => {
         delete onlineUsers[userId];
         io.emit("userStatus", { userId, online: false });
       }
+    console.log("dis-conntected", onlineUsers);
     });
 
     socket.on("joinConversation", (conversationId) => {
@@ -56,6 +58,7 @@ module.exports = (server) => {
           lastMessageTime: chatMessage.timestamp,
         });
         io.to(conversationId).emit("receiveMessage", chatMessage);
+        io.emit("userStatus", { userId: senderId, online: true });
       } catch (error) {
         console.error("Error saving message to database:", error);
       }
