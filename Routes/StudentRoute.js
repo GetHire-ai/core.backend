@@ -60,7 +60,7 @@ StudentRouter.get("/GetStudentProfile", StudentverifyToken, GetStudentProfile);
 StudentRouter.put(
   "/UpdateStudentProfile",
   StudentverifyToken,
-  upload.fields([{ name: "image1" }, { name: "image2" }, { name: "image3" }]),
+  upload.fields([{ name: "image1" }, { name: "image2" }, { name: "image3" }, { name: "Resume" }]),
   UpdateStudentProfile
 );
 StudentRouter.put(

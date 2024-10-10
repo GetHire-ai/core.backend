@@ -463,41 +463,11 @@ const GetStudentProfile = asynchandler(async (req, res) => {
 const UpdateStudentProfile = asynchandler(async (req, res) => {
   try {
     const Studentid = req.StudentId;
-    const {
-      Email,
-      Number,
-      Name,
-      Website,
-      Gender,
-      languages,
-      introductionVideo,
-      highestQualification,
-      Education,
-      JobDetails,
-      position_of_responsibility,
-      Training_details,
-      Projects,
-      Skill_Set,
-      Work_Samples,
-      Expected_Salary,
-      Current_Salary,
-      Experience,
-      Joining_Date,
-      Additional_Info,
-      Address,
-      summary,
-      gender,
-      dob,
-      jobTitles,
-      locations,
-    } = req.body;
-
+    const { Email, Number, Name, Website, Gender, languages, introductionVideo, highestQualification, Education, JobDetails, position_of_responsibility, Training_details, Projects, Skill_Set, Work_Samples, Expected_Salary, Current_Salary, Experience, Joining_Date, Additional_Info, Address, summary, gender, dob, jobTitles, locations, } = req.body;
     const GetStudent = await StudentModel.findById(Studentid);
-
     if (!GetStudent) {
-      return Response.notFoundError(res, "Company Not Found");
+      return Response.notFoundError(res, "Student Not Found");
     }
-
     let uploadImg1;
 
     if (req.files && req.files.image1 && req.files.image1[0]) {
@@ -540,92 +510,25 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
       }
     }
 
-    if (Email) {
-      GetStudent.Email = Email;
+    let Resume;
+
+    if (req.files && req.files.Resume && req.files.Resume[0]) {
+      const uploadedFile = await cloudinary.uploader.upload(
+        req.files.Resume[0].path,
+        {
+          folder: "GetHire",
+        }
+      );
+      if (uploadedFile) {
+        Resume = uploadedFile.secure_url;
+      }
     }
-    if (Number) {
-      GetStudent.Number = Number;
-    }
-    if (Name) {
-      GetStudent.Name = Name;
-    }
-    if (Email) {
-      GetStudent.Email = Email;
-    }
-    if (dob) {
-      GetStudent.dob = dob;
-    }
-    if (locations) {
-      GetStudent.locations = locations;
-    }
-    if (jobTitles) {
-      GetStudent.jobTitles = jobTitles;
-    }
-    if (gender) {
-      GetStudent.gender = gender;
-    }
-    if (summary) {
-      GetStudent.summary = summary;
-    }
-    if (uploadImg1) {
-      GetStudent.Image = uploadImg1;
-    }
-    if (uploadImg2) {
-      GetStudent.Resume = uploadImg2;
-    }
-    if (Website) {
-      GetStudent.Website = Website;
-    }
-    if (Gender) {
-      GetStudent.Gender = Gender;
-    }
-    if (languages) {
-      GetStudent.languages = languages;
-    }
-    if (uploadvideo) {
-      GetStudent.introductionVideo = uploadvideo;
-    }
-    if (highestQualification) {
-      GetStudent.highestQualification = highestQualification;
-    }
-    if (Education) {
-      GetStudent.Education = Education;
-    }
-    if (JobDetails) {
-      GetStudent.JobDetails = JobDetails;
-    }
-    if (position_of_responsibility) {
-      GetStudent.position_of_responsibility = position_of_responsibility;
-    }
-    if (Training_details) {
-      GetStudent.Training_details = Training_details;
-    }
-    if (Projects) {
-      GetStudent.Projects = Projects;
-    }
-    if (Skill_Set) {
-      GetStudent.Skill_Set = Skill_Set;
-    }
-    if (Work_Samples) {
-      GetStudent.Work_Samples = Work_Samples;
-    }
-    if (Expected_Salary) {
-      GetStudent.Expected_Salary = Expected_Salary;
-    }
-    if (Current_Salary) {
-      GetStudent.Current_Salary = Current_Salary;
-    }
-    if (Experience) {
-      GetStudent.Experience = Experience;
-    }
-    if (Joining_Date) {
-      GetStudent.Joining_Date = Joining_Date;
-    }
-    if (Additional_Info) {
-      GetStudent.Additional_Info = Additional_Info;
-    }
-    if (Address) {
-      GetStudent.Address = Address;
+
+    const fields = { Email, Number, Name, dob, locations, jobTitles, gender, summary, uploadImg1, uploadImg2, Website, Gender, languages, uploadvideo, highestQualification, Education, JobDetails, position_of_responsibility, Training_details, Projects, Skill_Set, Work_Samples, Expected_Salary, Current_Salary, Experience, Joining_Date, Additional_Info, Address, Resume };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value) {
+        GetStudent[key] = value;
+      }
     }
 
     const UpdatedStudent = await GetStudent.save();
