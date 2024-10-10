@@ -164,9 +164,9 @@ const getInvitedJobs = asynchandler(async (req, res) => {
     let data = await JobModel.find();
     let invitedJobs = data.filter((job) =>
       job.invitedCandidates.some(
-        (candidate) => candidate.candidateId.equals(studentId)
-        // &&
-        // candidate.status === "pending"
+        (candidate) =>
+          candidate.candidateId.equals(studentId) &&
+          candidate.status === "pending"
       )
     );
     response.successResponse(
@@ -217,7 +217,6 @@ const rejectInvite = asynchandler(async (req, res) => {
   try {
     let studentId = req.StudentId;
     let jobId = req.params.id;
-
     // Find the job by its ID
     let job = await JobModel.findById(jobId);
     if (!job) {
