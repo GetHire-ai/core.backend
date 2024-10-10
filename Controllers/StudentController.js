@@ -18,7 +18,6 @@ const CompanyModel = require("../Model/CompanyModel");
 const { sendWhatsapp } = require("../Utils/whatsApp");
 const { sendMail } = require("../Utils/sendMail");
 
-
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -755,69 +754,80 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
       text: `The interview for ${jobApplication?.JobId?.positionName} has been rescheduled by the candidate.`,
     });
 
-    const findStudent = await StudentModel.findById(jobApplication?.StudentId?._id);
+    const findStudent = await StudentModel.findById(
+      jobApplication?.StudentId?._id
+    );
 
     // Update interview schedule
     jobApplication.interviewSchedule = {
       ...jobApplication.interviewSchedule, // Keep existing properties
       date,
-      Time
+      Time,
     };
     jobApplication.isinterviewScheduled = true;
     await jobApplication.save();
     // Send notifications
-    sendWhatsapp(findStudent.Number, `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`);
-    sendMail(findStudent?.Email, "Interview Rescheduled", `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`);
-    sendMail(jobApplication?.CompanyId?.Email, "Interview Rescheduled", `The interview for ${jobApplication?.JobId?.positionName} has been rescheduled by the candidate.`);
+    sendWhatsapp(
+      findStudent.Number,
+      `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`
+    );
+    sendMail(
+      findStudent?.Email,
+      "Interview Rescheduled",
+      `Your interview for ${jobApplication?.JobId?.positionName} has been rescheduled.`
+    );
+    sendMail(
+      jobApplication?.CompanyId?.Email,
+      "Interview Rescheduled",
+      `The interview for ${jobApplication?.JobId?.positionName} has been rescheduled by the candidate.`
+    );
 
-    return response.successResponse(res, jobApplication, "Interview rescheduled successfully");
+    return response.successResponse(
+      res,
+      jobApplication,
+      "Interview rescheduled successfully"
+    );
   } catch (error) {
     console.error("Error:", error);
     return response.internalServerError(res, "Internal server error");
   }
 });
 
-
-
 //============================[ApplyForJob ]==============================
 
 const ApplyForJob = asynchandler(async (req, res) => {
   try {
     const Studentid = req.StudentId;
-
     const { JobId, CompanyId, Resume, relocate } = req.body;
-
     const existingApplication = await JobApplyModel.findOne({
       StudentId: Studentid,
       JobId,
     });
-
     if (existingApplication) {
       return response.validationError(
         res,
         "You have already applied for this job."
       );
     }
-    let uploadImg1;
-    if (req.files && req.files.image1 && req.files.image1[0]) {
+    let rusumeURL;
+    if (req.files && req.files.resumeFile && req.files.resumeFile[0]) {
       const uploadedFile = await cloudinary.uploader.upload(
-        req.files.image1[0].path,
+        req.files.resumeFile[0].path,
         {
           folder: "GetHire",
         }
       );
       if (uploadedFile) {
-        uploadImg1 = uploadedFile.secure_url;
+        rusumeURL = uploadedFile.secure_url;
       }
     }
-
     Job = new JobApplyModel({
       StudentId: Studentid,
       JobId,
       CompanyId,
-      Resume,
+      Resume: Resume ? Resume : null,
       relocate,
-      Custom_resume: uploadImg1,
+      resumeFile: rusumeURL,
     });
     let findJob = await JobModel.findById(JobId);
     let findCompany = await CompanyModel.findById(CompanyId);
@@ -827,19 +837,19 @@ const ApplyForJob = asynchandler(async (req, res) => {
       JobId: JobId,
       text: `A new Student apply in your posted job for ${findJob?.positionName}.`,
     });
-    sendMail(findCompany?.Email, `A new Student apply in your posted job for ${findJob?.positionName}.`, `A new Student apply in your posted job for ${findJob?.positionName}.`)
+    sendMail(
+      findCompany?.Email,
+      `A new Student apply in your posted job for ${findJob?.positionName}.`,
+      `A new Student apply in your posted job for ${findJob?.positionName}.`
+    );
     sendWhatsapp(
       findCompany.Number,
       `1 student apply for your posted job ${findJob?.positionName}`
     );
-
-
-
     const savedjob = await Job.save();
     if (!savedjob) {
       return response.validationError(res, "Not Applied for job");
     }
-
     return response.successResponse(res, savedjob, "Job Applied completed.");
   } catch (error) {
     console.log(error);
@@ -1133,5 +1143,5 @@ module.exports = {
   CreateStudentOtpforSignup,
   verifyotpforsignup,
   UpdateStudentSkillScore,
-  ReScheduleInterview
+  ReScheduleInterview,
 };

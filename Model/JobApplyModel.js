@@ -4,7 +4,7 @@ const JobApplySchema = new mongoose.Schema({
   CompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company" },
   JobId: { type: mongoose.Schema.Types.ObjectId, ref: "Jobs" },
   StudentId: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
-  Custom_resume: { type: String, require: true },
+  resumeFile: { type: String },
   Resume: { type: mongoose.Schema.Types.ObjectId, ref: "AIResume" },
   status: {
     type: String,

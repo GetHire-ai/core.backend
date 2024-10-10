@@ -72,7 +72,7 @@ StudentRouter.put(
 StudentRouter.post(
   "/ApplyForJob",
   StudentverifyToken,
-  upload.fields([{ name: "image1" }]),
+  upload.fields([{ name: "resumeFile" }]),
   ApplyForJob
 );
 
@@ -130,8 +130,10 @@ StudentRouter.post("/invitedjobs/accept/:id", StudentverifyToken, acceptInvite);
 StudentRouter.post("/invitedjobs/reject/:id", StudentverifyToken, rejectInvite);
 
 // Reschedule interview
-StudentRouter.post("/interview/reschedule/:id", StudentverifyToken, ReScheduleInterview);
-
-
+StudentRouter.post(
+  "/interview/reschedule/:id",
+  StudentverifyToken,
+  ReScheduleInterview
+);
 
 module.exports = StudentRouter;
