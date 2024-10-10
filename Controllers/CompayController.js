@@ -1182,19 +1182,28 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
       return response.notFoundError(res, "No one applied for this job yet");
     }
 
-    const applicationsWithResultsPromises = applications.map(async (application) => {
-      const { StudentId, JobId } = application;
-      const skillsResult = await TestModel.findOne({ student: StudentId._id, job: JobId._id });
-      const aiTestResult = await AITestResultModel.findOne({ student: StudentId._id, job: JobId._id });
+    const applicationsWithResultsPromises = applications.map(
+      async (application) => {
+        const { StudentId, JobId } = application;
+        const skillsResult = await TestModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
+        const aiTestResult = await AITestResultModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
 
-
-      return {
-        ...application.toObject(),
-        skillsTestResult: skillsResult || null,
-        aiTestResult: aiTestResult || null,
-      };
-    });
-    const applicationsWithResults = await Promise.all(applicationsWithResultsPromises);
+        return {
+          ...application.toObject(),
+          skillsTestResult: skillsResult || null,
+          aiTestResult: aiTestResult || null,
+        };
+      }
+    );
+    const applicationsWithResults = await Promise.all(
+      applicationsWithResultsPromises
+    );
     return response.successResponse(
       res,
       applicationsWithResults,
@@ -1205,8 +1214,6 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
-
-
 
 const GetAllshortlistStudentsofAllJobs = asynchandler(async (req, res) => {
   try {
@@ -1672,27 +1679,33 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
     const allShortlistedStudents = shortlistedResults.flat();
 
     // Prepare test results promises for each shortlisted student
-    const studentTestPromises = allShortlistedStudents.map(async (application) => {
-      const { StudentId, JobId } = application; // Destructure application
+    const studentTestPromises = allShortlistedStudents.map(
+      async (application) => {
+        const { StudentId, JobId } = application; // Destructure application
 
-      // Find skills and AI test results based on student and job IDs
-      const skillsResult = await TestModel.findOne({ student: StudentId._id, job: JobId._id });
-      const aiTestResult = await AITestResultModel.findOne({ student: StudentId._id, job: JobId._id });
+        // Find skills and AI test results based on student and job IDs
+        const skillsResult = await TestModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
+        const aiTestResult = await AITestResultModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
 
-      // Create a new object with the full application data and results
-      return {
-        ...application.toObject(), // Convert Mongoose document to plain object
-        skillsTestResult: skillsResult || null,
-        aiTestResult: aiTestResult || null,
-        avaregeScore: (skillsResult.scorePercentage + aiTestResult.score) / 2
-      };
-    });
+        // Create a new object with the full application data and results
+        return {
+          ...application.toObject(), // Convert Mongoose document to plain object
+          skillsTestResult: skillsResult || null,
+          aiTestResult: aiTestResult || null,
+          avaregeScore:
+            (skillsResult?.scorePercentage + aiTestResult?.score) / 2 || 0,
+        };
+      }
+    );
 
     // Await all promises for test results and create a fresh array
     allApplicationsWithResults = await Promise.all(studentTestPromises);
-
-
-
 
     // Send the response after all promises have resolved
     return response.successResponse(
@@ -1705,8 +1718,6 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
-
-
 
 //=============================[ Get Company Team Details ]============================
 

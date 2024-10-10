@@ -34,7 +34,22 @@ function generateOTP() {
 
 const RegisterStudent = asynchandler(async (req, res, next) => {
   try {
-    const { Name, Email, Number, Current_Salary, Degree, Expected_Salary, Experience, exprienceIn, highestQualification, jobTitles, locations, skills, values, youare, } = req.body;
+    const {
+      Name,
+      Email,
+      Number,
+      Current_Salary,
+      Degree,
+      Expected_Salary,
+      Experience,
+      exprienceIn,
+      highestQualification,
+      jobTitles,
+      locations,
+      skills,
+      values,
+      youare,
+    } = req.body;
 
     if (!Name) {
       return response.validationError(res, "Name is required");
@@ -70,7 +85,6 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
       }
     }
 
-
     let Skill_Set = [];
     if (skills) {
       for (const skill of skills) {
@@ -80,7 +94,24 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
     let Education = [{ Degree }];
 
     Student = new StudentModel({
-      Name, Email, Number: `+91${Number}`, otp, Current_Salary, Education, Expected_Salary, Experience, Name, Resume: url, exprienceIn, highestQualification, jobTitles, locations, Skill_Set, values, youare, otp,
+      Name,
+      Email,
+      Number: `+91${Number}`,
+      otp,
+      Current_Salary,
+      Education,
+      Expected_Salary,
+      Experience,
+      Name,
+      Resume: url,
+      exprienceIn,
+      highestQualification,
+      jobTitles,
+      locations,
+      Skill_Set,
+      values,
+      youare,
+      otp,
     });
 
     await Student.save();
@@ -463,7 +494,34 @@ const GetStudentProfile = asynchandler(async (req, res) => {
 const UpdateStudentProfile = asynchandler(async (req, res) => {
   try {
     const Studentid = req.StudentId;
-    const { Email, Number, Name, Website, Gender, languages, introductionVideo, highestQualification, Education, JobDetails, position_of_responsibility, Training_details, Projects, Skill_Set, Work_Samples, Expected_Salary, Current_Salary, Experience, Joining_Date, Additional_Info, Address, summary, gender, dob, jobTitles, locations, } = req.body;
+    const {
+      Email,
+      Number,
+      Name,
+      Website,
+      Gender,
+      languages,
+      introductionVideo,
+      highestQualification,
+      Education,
+      JobDetails,
+      position_of_responsibility,
+      Training_details,
+      Projects,
+      Skill_Set,
+      Work_Samples,
+      Expected_Salary,
+      Current_Salary,
+      Experience,
+      Joining_Date,
+      Additional_Info,
+      Address,
+      summary,
+      gender,
+      dob,
+      jobTitles,
+      locations,
+    } = req.body;
     const GetStudent = await StudentModel.findById(Studentid);
     if (!GetStudent) {
       return Response.notFoundError(res, "Student Not Found");
@@ -524,7 +582,37 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
       }
     }
 
-    const fields = { Email, Number, Name, dob, locations, jobTitles, gender, summary, uploadImg1, uploadImg2, Website, Gender, languages, uploadvideo, highestQualification, Education, JobDetails, position_of_responsibility, Training_details, Projects, Skill_Set, Work_Samples, Expected_Salary, Current_Salary, Experience, Joining_Date, Additional_Info, Address, Resume };
+    const fields = {
+      Email,
+      Number,
+      Name,
+      dob,
+      locations,
+      jobTitles,
+      gender,
+      summary,
+      uploadImg1,
+      uploadImg2,
+      Website,
+      Gender,
+      languages,
+      uploadvideo,
+      highestQualification,
+      Education,
+      JobDetails,
+      position_of_responsibility,
+      Training_details,
+      Projects,
+      Skill_Set,
+      Work_Samples,
+      Expected_Salary,
+      Current_Salary,
+      Experience,
+      Joining_Date,
+      Additional_Info,
+      Address,
+      Resume,
+    };
     for (const [key, value] of Object.entries(fields)) {
       if (value) {
         GetStudent[key] = value;
@@ -800,7 +888,11 @@ const GetAllAppiledJobidsofaStudent = asynchandler(async (req, res) => {
       .populate("JobId");
 
     if (!appliedJobs || appliedJobs.length === 0) {
-      return response.notFound(res, "No applied jobs found for this student.");
+      return response.successResponse(
+        res,
+        [],
+        "No applied jobs found for this student."
+      );
     }
     const appliedJobIds = appliedJobs.map((job) => job.JobId?._id);
     return response.successResponse(
