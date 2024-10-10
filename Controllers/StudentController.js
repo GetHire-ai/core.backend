@@ -34,23 +34,7 @@ function generateOTP() {
 
 const RegisterStudent = asynchandler(async (req, res, next) => {
   try {
-    console.log(req.body);
-    const {
-      Name,
-      Email,
-      Number,
-      Current_Salary,
-      Degree,
-      Expected_Salary,
-      Experience,
-      exprienceIn,
-      highestQualification,
-      jobTitles,
-      locations,
-      skills,
-      values,
-      youare,
-    } = req.body;
+    const { Name, Email, Number, Current_Salary, Degree, Expected_Salary, Experience, exprienceIn, highestQualification, jobTitles, locations, skills, values, youare, } = req.body;
 
     if (!Name) {
       return response.validationError(res, "Name is required");
@@ -70,8 +54,22 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
     if (number) {
       return response.validationError(res, "Number alredy Exist ");
     }
-
     const otp = generateOTP();
+
+    let url;
+
+    if (req.files && req.files.image1 && req.files.image1[0]) {
+      const uploadedFile = await cloudinary.uploader.upload(
+        req.files.image1[0].path,
+        {
+          folder: "GetHire",
+        }
+      );
+      if (uploadedFile) {
+        url = uploadedFile.secure_url;
+      }
+    }
+
 
     let Skill_Set = [];
     if (skills) {
@@ -82,23 +80,7 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
     let Education = [{ Degree }];
 
     Student = new StudentModel({
-      Name,
-      Email,
-      Number: `+91${Number}`,
-      otp,
-      Current_Salary,
-      Education,
-      Expected_Salary,
-      Experience,
-      Name,
-      exprienceIn,
-      highestQualification,
-      jobTitles,
-      locations,
-      Skill_Set,
-      values,
-      youare,
-      otp,
+      Name, Email, Number: `+91${Number}`, otp, Current_Salary, Education, Expected_Salary, Experience, Name, Resume: url, exprienceIn, highestQualification, jobTitles, locations, Skill_Set, values, youare, otp,
     });
 
     await Student.save();

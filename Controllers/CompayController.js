@@ -97,7 +97,7 @@ const verifyEmailotp = asynchandler(async (req, res) => {
 const RegisterCompany = asynchandler(async (req, res, next) => {
   try {
     const { Name, Email, Number, Password, firstName, lastName } = req.body;
-
+    console.log(req.body);
     if (!Name) {
       return response.validationError(res, "Name is required");
     }

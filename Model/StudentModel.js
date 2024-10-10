@@ -24,14 +24,14 @@ const StudentSchema = new mongoose.Schema({
   jobTitles: [{ type: String, require: true }],
   Education: [
     {
-      Class: { type: String, require: true },
-      CollegeName: { type: String, require: true },
-      StartYear: { type: String, require: true },
-      EndYear: { type: String, require: true },
-      Degree: { type: String, require: true },
-      Stream: { type: String, require: true },
-      PerformanceScale: { type: String, require: true },
-      Performance: { type: String, require: true },
+      Class: { type: String, },
+      CollegeName: { type: String, },
+      StartYear: { type: String, },
+      EndYear: { type: String, },
+      Degree: { type: String, },
+      Stream: { type: String, },
+      PerformanceScale: { type: String, },
+      Performance: { type: String, },
     },
   ],
   JobDetails: [

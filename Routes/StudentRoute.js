@@ -45,7 +45,7 @@ const {
 
 const StudentRouter = express.Router();
 
-StudentRouter.post("/RegisterStudent", RegisterStudent);
+StudentRouter.post("/RegisterStudent", upload.fields([{ name: "resume" }]), RegisterStudent);
 StudentRouter.post("/CreateStudentOtp/:channel", CreateStudentOtp);
 StudentRouter.post(
   "/CreateStudentOtp/signup/:channel",
