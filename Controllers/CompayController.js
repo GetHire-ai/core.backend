@@ -231,7 +231,6 @@ const CreateCompanyOtp = asynchandler(async (req, res) => {
         clientId,
         clientSecret
       );
-      console.log("Success", response);
       if (response?.errorMessage) {
         return res.status(500).send(response);
       }
@@ -336,7 +335,6 @@ const Resendotp = asynchandler(async (req, res) => {
       clientId,
       clientSecret
     );
-    console.log("Success", response);
     if (response?.errorMessage) {
       return res.status(500).send(response);
     }
