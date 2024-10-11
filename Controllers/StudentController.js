@@ -643,6 +643,7 @@ const UpdateStudentSkillScore = asynchandler(async (req, res) => {
     if (!Array.isArray(student.Skill_Set)) {
       return response.badRequest(res, "Skill_Set is not an array");
     }
+    console.log(skillToUpdate)
     const skillIndex = student.Skill_Set.findIndex(
       (skill) => skill._id.toString() === skillToUpdate._id.toString()
     );
