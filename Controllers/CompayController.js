@@ -1021,30 +1021,89 @@ const RejectJobApplication = asynchandler(async (req, res) => {
 
 const GetAllStudentsofajob = asynchandler(async (req, res) => {
   try {
-    const Companyid = req.userId;
+    const companyId = req.userId;
     const { id } = req.params;
 
-    const getjob = await JobModel.findById(id);
+    // Find the job by ID
+    const job = await JobModel.findById(id);
 
-    if (!getjob) {
-      return response.notFoundError(res, "Job Not found");
+    if (!job) {
+      return response.notFoundError(res, "Job not found");
     }
 
-    const GetAllAppiledStudent = await JobApplyModel.find({
-      JobId: id,
-    }).populate("StudentId");
+    // Find all students who applied for the job
+    const appliedStudents = await JobApplyModel.find({ JobId: id }).populate(
+      "StudentId"
+    );
 
-    if (!GetAllAppiledStudent) {
-      return response.notFoundError(res, "No One Appiled for this Job yet");
+    if (!appliedStudents || appliedStudents.length === 0) {
+      return response.notFoundError(res, "No one applied for this job yet");
     }
 
+    // Process each applied student to calculate skill matching and test results
+    const studentTestResults = await Promise.all(
+      appliedStudents.map(async (application) => {
+        const { StudentId, JobId } = application;
+
+        // Extract required skills from the job's skill assessment
+        const requiredSkills =
+          JobId?.skillAssessment
+            ?.filter((skill) => skill.type === "skill" && skill.mustHave)
+            ?.map((skill) => skill.skill) || [];
+
+        const studentSkills = StudentId?.Skill_Set || [];
+        let totalScore = 0;
+        let matchedSkillCount = 0;
+
+        // Calculate matching skills and scores
+        const resultSkills = requiredSkills.map((requiredSkill) => {
+          const matchedSkill = studentSkills.find(
+            (skillObj) =>
+              skillObj.Skill.toLowerCase() === requiredSkill.toLowerCase()
+          );
+
+          if (matchedSkill) {
+            totalScore += matchedSkill.score || 0;
+            matchedSkillCount += 1;
+            return {
+              skill: matchedSkill.Skill,
+              score: matchedSkill.score,
+              status: "matched",
+            };
+          } else {
+            return { skill: requiredSkill, score: 0, status: "not_tested" };
+          }
+        });
+        const skillsPerc =
+          resultSkills?.length > 0
+            ? (totalScore / resultSkills?.length).toFixed(2)
+            : 0;
+        const aiTestResult = await AITestResultModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
+
+        // Calculate average score (skill test + AI test)
+        const averageScore =
+          (parseFloat(skillsPerc) + (aiTestResult?.score || 0)) / 2 || 0;
+
+        return {
+          ...application.toObject(),
+          aiTestResult: aiTestResult || null,
+          aiTestResultDetails: resultSkills || null,
+          averageScore,
+        };
+      })
+    );
+
+    // Return the result after processing all students
     return response.successResponse(
       res,
-      GetAllAppiledStudent,
-      "Get all Applications"
+      studentTestResults,
+      "Get all applications with results for the job"
     );
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return response.internalServerError(res, "Internal server error");
   }
 });
@@ -1168,7 +1227,6 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
     const companyId = req.userId;
     const { id } = req.params;
     const job = await JobModel.findById(id);
-
     if (!job) {
       return response.notFoundError(res, "Job not found");
     }
@@ -1176,24 +1234,30 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
       JobId: id,
       isshortlisted: true,
       IsSelectedforjob: false,
-    }).populate("StudentId");
+    })
+      .populate("StudentId")
+      .populate("JobId");
 
     if (!applications || applications.length === 0) {
       return response.notFoundError(res, "No one applied for this job yet");
     }
 
-    const applicationsWithResultsPromises = applications.map(
-      async (application) => {
+    // Process each application to calculate skill matching and test results
+    const applicationsWithResults = await Promise.all(
+      applications.map(async (application) => {
         const { StudentId, JobId } = application;
+
+        // Extract required skills from the job's skill assessment
         const requiredSkills =
           JobId?.skillAssessment
-            ?.filter(
-              (skill) => skill.type === "skill" && skill.mustHave === true
-            )
+            ?.filter((skill) => skill.type === "skill" && skill.mustHave)
             ?.map((skill) => skill.skill) || [];
+
         const studentSkills = StudentId?.Skill_Set || [];
         let totalScore = 0;
         let matchedSkillCount = 0;
+
+        // Calculate matching skills and scores
         const resultSkills = requiredSkills.map((requiredSkill) => {
           const matchedSkill = studentSkills.find(
             (skillObj) =>
@@ -1201,27 +1265,20 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
           );
 
           if (matchedSkill) {
-            const score = matchedSkill.score || 0;
-            totalScore += score;
+            totalScore += matchedSkill.score || 0;
             matchedSkillCount += 1;
-
             return {
               skill: matchedSkill.Skill,
-              score: score,
+              score: matchedSkill.score,
               status: "matched",
             };
           } else {
-            return {
-              skill: requiredSkill,
-              score: 0,
-              status: "not_tested",
-            };
+            return { skill: requiredSkill, score: 0, status: "not_tested" };
           }
         });
-
         const skillsPerc =
-          matchedSkillCount > 0
-            ? (totalScore / matchedSkillCount).toFixed(2)
+          resultSkills?.length > 0
+            ? (totalScore / resultSkills?.length).toFixed(2)
             : 0;
         const aiTestResult = await AITestResultModel.findOne({
           student: StudentId._id,
@@ -1230,15 +1287,15 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
 
         return {
           ...application.toObject(),
+          skillsTestResult: skillsPerc || 0,
+          skillsTestDetails: resultSkills || null,
           aiTestResult: aiTestResult || null,
-          aiTestResultDetails: resultSkills || null,
-          avaregeScore: (skillsPerc + aiTestResult?.score) / 2 || 0,
+          avaregeScore:
+            ((parseFloat(skillsPerc) || 0) + (aiTestResult?.score || 0)) / 2,
         };
-      }
+      })
     );
-    const applicationsWithResults = await Promise.all(
-      applicationsWithResultsPromises
-    );
+
     return response.successResponse(
       res,
       applicationsWithResults,
@@ -1734,9 +1791,11 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
           };
         }
       });
-
       const skillsPerc =
-        matchedSkillCount > 0 ? (totalScore / matchedSkillCount).toFixed(2) : 0;
+        resultSkills?.length > 0
+          ? (totalScore / resultSkills?.length).toFixed(2)
+          : 0;
+      console.log(skillsPerc);
 
       const aiTestResult = await AITestResultModel.findOne({
         student: StudentId._id,
@@ -1744,13 +1803,14 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
       });
       return {
         ...application.toObject(),
+        skillsTestResult: skillsPerc || 0,
+        skillsTestDetails: resultSkills || null,
         aiTestResult: aiTestResult || null,
-        aiTestResultDetails: resultSkills || null,
-        avaregeScore: (skillsPerc + aiTestResult?.score) / 2 || 0,
+        avaregeScore:
+          ((parseFloat(skillsPerc) || 0) + (aiTestResult?.score || 0)) / 2,
       };
     });
     allApplications = await Promise.all(TestPromises);
-
     return response.successResponse(
       res,
       allApplications,
