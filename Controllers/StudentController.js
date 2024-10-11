@@ -640,15 +640,14 @@ const UpdateStudentSkillScore = asynchandler(async (req, res) => {
     if (!student) {
       return response.notFoundError(res, "Student Not Found");
     }
-    if (!Array.isArray(student.Skill_Set)) {
+    if (!Array.isArray(student?.Skill_Set)) {
       return response.badRequest(res, "Skill_Set is not an array");
     }
-    console.log(skillToUpdate)
     const skillIndex = student.Skill_Set.findIndex(
-      (skill) => skill._id.toString() === skillToUpdate._id.toString()
+      (skill) => skill?._id?.toString() === skillToUpdate?._id?.toString()
     );
     if (skillIndex !== -1) {
-      student.Skill_Set[skillIndex].score = skillToUpdate.score;
+      student.Skill_Set[skillIndex].score = skillToUpdate.score || 0;
     } else {
       student.Skill_Set.push(skillToUpdate);
     }

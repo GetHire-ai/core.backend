@@ -1085,19 +1085,19 @@ const GetAllStudentsofajob = asynchandler(async (req, res) => {
     if (!job) {
       return response.notFoundError(res, "Job not found");
     }
+    const applications = await JobApplyModel.find({
+      JobId: job._id,
+    })
+      .populate("StudentId")
+      .populate("JobId");
 
-    // Find all students who applied for the job
-    const appliedStudents = await JobApplyModel.find({ JobId: id }).populate(
-      "StudentId"
-    );
-
-    if (!appliedStudents || appliedStudents.length === 0) {
+    if (!applications || applications.length === 0) {
       return response.notFoundError(res, "No one applied for this job yet");
     }
 
-    // Process each applied student to calculate skill matching and test results
-    const studentTestResults = await Promise.all(
-      appliedStudents.map(async (application) => {
+    // Process each application to calculate skill matching and test results
+    const applicationsWithResults = await Promise.all(
+      applications.map(async (application) => {
         const { StudentId, JobId } = application;
 
         // Extract required skills from the job's skill assessment
@@ -1138,23 +1138,20 @@ const GetAllStudentsofajob = asynchandler(async (req, res) => {
           job: JobId._id,
         });
 
-        // Calculate average score (skill test + AI test)
-        const averageScore =
-          (parseFloat(skillsPerc) + (aiTestResult?.score || 0)) / 2 || 0;
-
         return {
           ...application.toObject(),
+          skillsTestResult: skillsPerc || 0,
+          skillsTestDetails: resultSkills || null,
           aiTestResult: aiTestResult || null,
-          aiTestResultDetails: resultSkills || null,
-          averageScore,
+          avaregeScore:
+            ((parseFloat(skillsPerc) || 0) + (aiTestResult?.score || 0)) / 2,
         };
       })
     );
 
-    // Return the result after processing all students
     return response.successResponse(
       res,
-      studentTestResults,
+      applicationsWithResults,
       "Get all applications with results for the job"
     );
   } catch (error) {

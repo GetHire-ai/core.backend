@@ -11,8 +11,6 @@ const getMatchingCandidates = (students, job) => {
     .map((student) => {
       let matchScore = 0;
       const totalCriteria = 3;
-
-      // Skill match
       const skillMatch = job.skillsRequired.some((skill) =>
         student.Skill_Set.some(
           (studentSkill) =>
@@ -29,12 +27,10 @@ const getMatchingCandidates = (students, job) => {
       const experienceMatch =
         student.Experience >= job.minExp && student.Experience <= job.maxExp;
       if (experienceMatch) matchScore++;
-
-      // Calculate match percentage
       const matchPercentage = (matchScore / totalCriteria) * 100;
 
       return {
-        ...student.toObject(), // Ensure you convert Mongoose document to plain object
+        ...student.toObject(),
         matchPercentage,
         skillMatch,
         locationMatch,
@@ -51,10 +47,16 @@ const getFilteredCandidates = async (req, res) => {
       .populate("invitedCandidates.candidateId")
       .populate("notInterestedCandidates");
     if (!job) return res.status(404).send("Job not found");
-
-    const students = await StudentModel.find();
+    let students = await StudentModel.find();
     const jobApplications = await JobApplyModel.find({ JobId: jobId }).select(
       "StudentId status"
+    );
+    const appliedStudentIds = new Set(
+      jobApplications.map((app) => app.StudentId.toString())
+    );
+
+    students = students?.filter(
+      (student) => !appliedStudentIds.has(student._id.toString())
     );
 
     const applicationStatusMap = jobApplications.reduce((map, application) => {
@@ -69,7 +71,7 @@ const getFilteredCandidates = async (req, res) => {
           candidate.candidateId.equals(student._id)
         );
         if (invitedCandidate) {
-          inviteStatus = invitedCandidate.status; // Get actual status
+          inviteStatus = invitedCandidate.status;
         } else if (
           job.notInterestedCandidates.some((candidate) =>
             candidate.equals(student._id)
@@ -77,7 +79,6 @@ const getFilteredCandidates = async (req, res) => {
         ) {
           inviteStatus = "not interested";
         }
-
         const applicationStatus =
           applicationStatusMap[student._id] ||
           (inviteStatus !== "not invited" ? inviteStatus : "not applied");
@@ -89,7 +90,6 @@ const getFilteredCandidates = async (req, res) => {
         };
       }
     );
-
     response.successResponse(res, studentsWithStatus, "fetched");
   } catch (error) {
     console.log(error);
