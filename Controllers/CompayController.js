@@ -1185,10 +1185,44 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
     const applicationsWithResultsPromises = applications.map(
       async (application) => {
         const { StudentId, JobId } = application;
-        const skillsResult = await TestModel.findOne({
-          student: StudentId._id,
-          job: JobId._id,
+        const requiredSkills =
+          JobId?.skillAssessment
+            ?.filter(
+              (skill) => skill.type === "skill" && skill.mustHave === true
+            )
+            ?.map((skill) => skill.skill) || [];
+        const studentSkills = StudentId?.Skill_Set || [];
+        let totalScore = 0;
+        let matchedSkillCount = 0;
+        const resultSkills = requiredSkills.map((requiredSkill) => {
+          const matchedSkill = studentSkills.find(
+            (skillObj) =>
+              skillObj.Skill.toLowerCase() === requiredSkill.toLowerCase()
+          );
+
+          if (matchedSkill) {
+            const score = matchedSkill.score || 0;
+            totalScore += score;
+            matchedSkillCount += 1;
+
+            return {
+              skill: matchedSkill.Skill,
+              score: score,
+              status: "matched",
+            };
+          } else {
+            return {
+              skill: requiredSkill,
+              score: 0,
+              status: "not_tested",
+            };
+          }
         });
+
+        const skillsPerc =
+          matchedSkillCount > 0
+            ? (totalScore / matchedSkillCount).toFixed(2)
+            : 0;
         const aiTestResult = await AITestResultModel.findOne({
           student: StudentId._id,
           job: JobId._id,
@@ -1196,8 +1230,9 @@ const GetAllshortlistStudentsofajob = asynchandler(async (req, res) => {
 
         return {
           ...application.toObject(),
-          skillsTestResult: skillsResult || null,
           aiTestResult: aiTestResult || null,
+          aiTestResultDetails: resultSkills || null,
+          avaregeScore: (skillsPerc + aiTestResult?.score) / 2 || 0,
         };
       }
     );
@@ -1651,18 +1686,10 @@ const GetAllSelectedStudents = asynchandler(async (req, res) => {
 const GetAllShortlistedStudents = asynchandler(async (req, res) => {
   try {
     const companyId = req.userId;
-
-    // Find all jobs associated with the company
     const jobsOfCompany = await JobModel.find({ Company: companyId });
-
-    // Initialize an array to hold the final applications with results
-    let allApplicationsWithResults = [];
-
-    // Iterate over each job of the company and fetch all shortlisted students
+    let allApplications = [];
     const shortlistedStudentsPromises = jobsOfCompany.map(async (job) => {
       const jobId = job._id;
-
-      // Find all shortlisted students for the job
       return await JobApplyModel.find({
         JobId: jobId,
         isshortlisted: true,
@@ -1672,45 +1699,61 @@ const GetAllShortlistedStudents = asynchandler(async (req, res) => {
         .populate("JobId");
     });
 
-    // Await all promises for fetching shortlisted students
     const shortlistedResults = await Promise.all(shortlistedStudentsPromises);
-
-    // Flatten the array of shortlisted students
     const allShortlistedStudents = shortlistedResults.flat();
+    const TestPromises = allShortlistedStudents.map(async (application) => {
+      const { StudentId, JobId } = application;
+      const requiredSkills =
+        JobId?.skillAssessment
+          ?.filter((skill) => skill.type === "skill" && skill.mustHave === true)
+          ?.map((skill) => skill.skill) || [];
+      const studentSkills = StudentId?.Skill_Set || [];
+      let totalScore = 0;
+      let matchedSkillCount = 0;
+      const resultSkills = requiredSkills.map((requiredSkill) => {
+        const matchedSkill = studentSkills.find(
+          (skillObj) =>
+            skillObj.Skill.toLowerCase() === requiredSkill.toLowerCase()
+        );
 
-    // Prepare test results promises for each shortlisted student
-    const studentTestPromises = allShortlistedStudents.map(
-      async (application) => {
-        const { StudentId, JobId } = application; // Destructure application
+        if (matchedSkill) {
+          const score = matchedSkill.score || 0;
+          totalScore += score;
+          matchedSkillCount += 1;
 
-        // Find skills and AI test results based on student and job IDs
-        const skillsResult = await TestModel.findOne({
-          student: StudentId._id,
-          job: JobId._id,
-        });
-        const aiTestResult = await AITestResultModel.findOne({
-          student: StudentId._id,
-          job: JobId._id,
-        });
+          return {
+            skill: matchedSkill.Skill,
+            score: score,
+            status: "matched",
+          };
+        } else {
+          return {
+            skill: requiredSkill,
+            score: 0,
+            status: "not_tested",
+          };
+        }
+      });
 
-        // Create a new object with the full application data and results
-        return {
-          ...application.toObject(), // Convert Mongoose document to plain object
-          skillsTestResult: skillsResult || null,
-          aiTestResult: aiTestResult || null,
-          avaregeScore:
-            (skillsResult?.scorePercentage + aiTestResult?.score) / 2 || 0,
-        };
-      }
-    );
+      const skillsPerc =
+        matchedSkillCount > 0 ? (totalScore / matchedSkillCount).toFixed(2) : 0;
 
-    // Await all promises for test results and create a fresh array
-    allApplicationsWithResults = await Promise.all(studentTestPromises);
+      const aiTestResult = await AITestResultModel.findOne({
+        student: StudentId._id,
+        job: JobId._id,
+      });
+      return {
+        ...application.toObject(),
+        aiTestResult: aiTestResult || null,
+        aiTestResultDetails: resultSkills || null,
+        avaregeScore: (skillsPerc + aiTestResult?.score) / 2 || 0,
+      };
+    });
+    allApplications = await Promise.all(TestPromises);
 
-    // Send the response after all promises have resolved
     return response.successResponse(
       res,
-      allApplicationsWithResults,
+      allApplications,
       "Get all applications with results for all jobs of the company."
     );
   } catch (error) {
