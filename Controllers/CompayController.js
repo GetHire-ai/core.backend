@@ -956,9 +956,64 @@ const GetAllApplicationofacompany = async (req, res) => {
       .populate("JobId")
       .populate("StudentId");
 
+    const studentTestResults = await Promise.all(
+      allApplications.map(async (application) => {
+        const { StudentId, JobId } = application;
+
+        // Extract required skills from the job's skill assessment
+        const requiredSkills =
+          JobId?.skillAssessment
+            ?.filter((skill) => skill.type === "skill" && skill.mustHave)
+            ?.map((skill) => skill.skill) || [];
+
+        const studentSkills = StudentId?.Skill_Set || [];
+        let totalScore = 0;
+        let matchedSkillCount = 0;
+
+        // Calculate matching skills and scores
+        const resultSkills = requiredSkills.map((requiredSkill) => {
+          const matchedSkill = studentSkills.find(
+            (skillObj) =>
+              skillObj.Skill.toLowerCase() === requiredSkill.toLowerCase()
+          );
+
+          if (matchedSkill) {
+            totalScore += matchedSkill.score || 0;
+            matchedSkillCount += 1;
+            return {
+              skill: matchedSkill.Skill,
+              score: matchedSkill.score,
+              status: "matched",
+            };
+          } else {
+            return { skill: requiredSkill, score: 0, status: "not_tested" };
+          }
+        });
+        const skillsPerc =
+          resultSkills?.length > 0
+            ? (totalScore / resultSkills?.length).toFixed(2)
+            : 0;
+        const aiTestResult = await AITestResultModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
+
+        // Calculate average score (skill test + AI test)
+        const averageScore =
+          (parseFloat(skillsPerc) + (aiTestResult?.score || 0)) / 2 || 0;
+
+        return {
+          ...application.toObject(),
+          aiTestResult: aiTestResult || null,
+          aiTestResultDetails: resultSkills || null,
+          averageScore,
+        };
+      })
+    );
+
     return response.successResponse(
       res,
-      allApplications,
+      studentTestResults,
       "All job applications received by the company"
     );
   } catch (error) {
@@ -1130,9 +1185,64 @@ const GetAllAppiedStudentsofajob = asynchandler(async (req, res) => {
       return response.notFoundError(res, "No One Appiled for this Job yet");
     }
 
+    const studentTestResults = await Promise.all(
+      GetAllAppiledStudent.map(async (application) => {
+        const { StudentId, JobId } = application;
+
+        // Extract required skills from the job's skill assessment
+        const requiredSkills =
+          JobId?.skillAssessment
+            ?.filter((skill) => skill.type === "skill" && skill.mustHave)
+            ?.map((skill) => skill.skill) || [];
+
+        const studentSkills = StudentId?.Skill_Set || [];
+        let totalScore = 0;
+        let matchedSkillCount = 0;
+
+        // Calculate matching skills and scores
+        const resultSkills = requiredSkills.map((requiredSkill) => {
+          const matchedSkill = studentSkills.find(
+            (skillObj) =>
+              skillObj.Skill.toLowerCase() === requiredSkill.toLowerCase()
+          );
+
+          if (matchedSkill) {
+            totalScore += matchedSkill.score || 0;
+            matchedSkillCount += 1;
+            return {
+              skill: matchedSkill.Skill,
+              score: matchedSkill.score,
+              status: "matched",
+            };
+          } else {
+            return { skill: requiredSkill, score: 0, status: "not_tested" };
+          }
+        });
+        const skillsPerc =
+          resultSkills?.length > 0
+            ? (totalScore / resultSkills?.length).toFixed(2)
+            : 0;
+        const aiTestResult = await AITestResultModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
+
+        // Calculate average score (skill test + AI test)
+        const averageScore =
+          (parseFloat(skillsPerc) + (aiTestResult?.score || 0)) / 2 || 0;
+
+        return {
+          ...application.toObject(),
+          aiTestResult: aiTestResult || null,
+          aiTestResultDetails: resultSkills || null,
+          averageScore,
+        };
+      })
+    );
+
     return response.successResponse(
       res,
-      GetAllAppiledStudent,
+      studentTestResults,
       "Get all Applications"
     );
   } catch (error) {
@@ -1163,9 +1273,64 @@ const GetAllRejectedStudentsofajob = asynchandler(async (req, res) => {
       return response.notFoundError(res, "No One Appiled for this Job yet");
     }
 
+    const studentTestResults = await Promise.all(
+      GetAllAppiledStudent.map(async (application) => {
+        const { StudentId, JobId } = application;
+
+        // Extract required skills from the job's skill assessment
+        const requiredSkills =
+          JobId?.skillAssessment
+            ?.filter((skill) => skill.type === "skill" && skill.mustHave)
+            ?.map((skill) => skill.skill) || [];
+
+        const studentSkills = StudentId?.Skill_Set || [];
+        let totalScore = 0;
+        let matchedSkillCount = 0;
+
+        // Calculate matching skills and scores
+        const resultSkills = requiredSkills.map((requiredSkill) => {
+          const matchedSkill = studentSkills.find(
+            (skillObj) =>
+              skillObj.Skill.toLowerCase() === requiredSkill.toLowerCase()
+          );
+
+          if (matchedSkill) {
+            totalScore += matchedSkill.score || 0;
+            matchedSkillCount += 1;
+            return {
+              skill: matchedSkill.Skill,
+              score: matchedSkill.score,
+              status: "matched",
+            };
+          } else {
+            return { skill: requiredSkill, score: 0, status: "not_tested" };
+          }
+        });
+        const skillsPerc =
+          resultSkills?.length > 0
+            ? (totalScore / resultSkills?.length).toFixed(2)
+            : 0;
+        const aiTestResult = await AITestResultModel.findOne({
+          student: StudentId._id,
+          job: JobId._id,
+        });
+
+        // Calculate average score (skill test + AI test)
+        const averageScore =
+          (parseFloat(skillsPerc) + (aiTestResult?.score || 0)) / 2 || 0;
+
+        return {
+          ...application.toObject(),
+          aiTestResult: aiTestResult || null,
+          aiTestResultDetails: resultSkills || null,
+          averageScore,
+        };
+      })
+    );
+
     return response.successResponse(
       res,
-      GetAllAppiledStudent,
+      studentTestResults,
       "Get all Applications"
     );
   } catch (error) {
