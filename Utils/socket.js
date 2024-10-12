@@ -27,7 +27,7 @@ module.exports = (server) => {
       io.emit("userStatus", { userId, online: true });
       console.log("conntected", onlineUsers);
     });
-    
+
     socket.on("userDisconnected", () => {
       const userId = Object.keys(onlineUsers).find(
         (key) => onlineUsers[key] === socket.id
@@ -36,11 +36,30 @@ module.exports = (server) => {
         delete onlineUsers[userId];
         io.emit("userStatus", { userId, online: false });
       }
-    console.log("dis-conntected", onlineUsers);
+      console.log("dis-conntected", onlineUsers);
     });
 
     socket.on("joinConversation", (conversationId) => {
       socket.join(conversationId);
+    });
+
+    socket.on("getConversations", async (userId) => {
+      try {
+        const conversations = await Conversation.find({
+          participants: userId,
+        }).populate("lastMessage");
+        socket.emit("conversationsList", conversations);
+      } catch (error) {
+        console.error("Error fetching conversations:", error);
+      }
+    });
+    socket.on("getMessages", async (conversationId) => {
+      try {
+        const messages = await Chat.find({ conversationId });
+        socket.emit("messagesList", messages);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
     });
 
     socket.on("sendMessage", async (data) => {
@@ -52,6 +71,7 @@ module.exports = (server) => {
         message,
       });
       try {
+        console.log(data);
         await chatMessage.save();
         await Conversation.findByIdAndUpdate(conversationId, {
           lastMessage: chatMessage._id,
