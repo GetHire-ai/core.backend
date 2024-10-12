@@ -23,12 +23,14 @@ module.exports = (server) => {
   });
 
   io.on("connection", (socket) => {
+
     socket.on("userConnected", (userId) => {
+      console.log('A user connected:', socket.id)
       if (!onlineUsers.some((user) => user.userId === userId)) {
         onlineUsers.push({ userId, socketId: socket.id });
         io.emit("userStatus", { userId, online: true });
       }
-      console.log("connected", onlineUsers);
+      console.log("onlineUsers after connect", onlineUsers.length);
     });
 
     socket.on("userDisconnected", () => {
@@ -39,7 +41,7 @@ module.exports = (server) => {
         const [removedUser] = onlineUsers.splice(userIndex, 1);
         io.emit("userStatus", { userId: removedUser.userId, online: false });
       }
-      console.log("disconnected", onlineUsers);
+      console.log("disconnected", onlineUsers.length);
     });
 
     socket.on("joinConversation", (conversationId) => {
@@ -102,19 +104,48 @@ module.exports = (server) => {
       const chatMessage = new Chat(data);
 
       try {
-        const saved = await chatMessage.save();
+        const savedMessage = await chatMessage.save();
         const conversation = await Conversation.findByIdAndUpdate(conversationId, {
-          lastMessage: chatMessage._id,
-          lastMessageTime: chatMessage.timestamp,
+          lastMessage: savedMessage._id,
+          lastMessageTime: savedMessage.timestamp,
         }, { new: true });
-        if (conversation && saved) {
-          io.to(conversationId).emit("receiveMessage", chatMessage, conversation);
-          io.emit("userStatus", { userId: senderId, online: true });
+
+        if (conversation) {
+          const participantDetails = {
+            company: null,
+            student: null,
+          };
+
+          await Promise.all(
+            conversation.participants.map(async (participantId) => {
+              const student = await StudentModel.findById(participantId);
+              if (student) {
+                participantDetails.student = student;
+              } else {
+                const company = await CompanyModel.findById(participantId);
+                if (company) {
+                  participantDetails.company = company;
+                }
+              }
+            })
+          );
+
+          const conversationCopy = {
+            ...conversation.toObject(),
+            participantDetails,
+            lastMessage: savedMessage,
+          };
+
+          // Emit the new message and the updated conversation to the socket
+          io.to(conversationId).emit("receiveMessage", savedMessage, conversationCopy);
+        } else {
+          throw new Error("Conversation not found");
         }
       } catch (error) {
         console.error("Error saving message to database:", error);
       }
     });
+
 
     socket.on("sendMessageAdmin", async (data) => {
       const { conversationId, senderId, senderType, message } = data;
@@ -145,7 +176,7 @@ module.exports = (server) => {
         const [removedUser] = onlineUsers.splice(userIndex, 1);
         io.emit("userStatus", { userId: removedUser.userId, online: false });
       }
-      console.log("disconnected", onlineUsers);
+      console.log("onlineUsers after disConnect", onlineUsers.length);
     });
   });
 };
