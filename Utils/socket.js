@@ -23,9 +23,8 @@ module.exports = (server) => {
   });
 
   io.on("connection", (socket) => {
-
     socket.on("userConnected", (userId) => {
-      console.log('A user connected:', socket.id)
+      console.log("A user connected:", socket.id);
       if (!onlineUsers.some((user) => user.userId === userId)) {
         onlineUsers.push({ userId, socketId: socket.id });
         io.emit("userStatus", { userId, online: true });
@@ -49,6 +48,7 @@ module.exports = (server) => {
     });
 
     socket.on("getConversations", async (userId) => {
+      console.log(userId);
       try {
         const conversations = await Conversation.find({
           participants: userId,
@@ -57,15 +57,20 @@ module.exports = (server) => {
           populate: [{ path: "senderId", model: "Student" }],
         });
 
+        // Filter out any conversations that are not found or invalid
+        const validConversations = conversations.filter(
+          (conversation) => conversation != null
+        );
+
         const updatedConversations = await Promise.all(
-          conversations.map(async (conversation) => {
+          validConversations.map(async (conversation) => {
             const participantDetails = {
               company: null,
               student: null,
             };
 
             await Promise.all(
-              conversation?.participants?.map(async (participantId) => {
+              conversation.participants.map(async (participantId) => {
                 let student = await StudentModel.findById(participantId);
                 if (student) {
                   participantDetails.student = student;
@@ -84,6 +89,7 @@ module.exports = (server) => {
             return conversationCopy;
           })
         );
+
         socket.emit("conversationsList", updatedConversations);
       } catch (error) {
         console.error("Error fetching conversations:", error);
@@ -105,10 +111,14 @@ module.exports = (server) => {
 
       try {
         const savedMessage = await chatMessage.save();
-        const conversation = await Conversation.findByIdAndUpdate(conversationId, {
-          lastMessage: savedMessage._id,
-          lastMessageTime: savedMessage.timestamp,
-        }, { new: true });
+        const conversation = await Conversation.findByIdAndUpdate(
+          conversationId,
+          {
+            lastMessage: savedMessage._id,
+            lastMessageTime: savedMessage.timestamp,
+          },
+          { new: true }
+        );
 
         if (conversation) {
           const participantDetails = {
@@ -137,7 +147,11 @@ module.exports = (server) => {
           };
 
           // Emit the new message and the updated conversation to the socket
-          io.to(conversationId).emit("receiveMessage", savedMessage, conversationCopy);
+          io.to(conversationId).emit(
+            "receiveMessage",
+            savedMessage,
+            conversationCopy
+          );
         } else {
           throw new Error("Conversation not found");
         }
@@ -145,7 +159,6 @@ module.exports = (server) => {
         console.error("Error saving message to database:", error);
       }
     });
-
 
     socket.on("sendMessageAdmin", async (data) => {
       const { conversationId, senderId, senderType, message } = data;
