@@ -27,7 +27,7 @@ module.exports = (server) => {
       console.log("A user connected:", socket.id);
       if (!onlineUsers.some((user) => user.userId === userId)) {
         onlineUsers.push({ userId, socketId: socket.id });
-        io.emit("userStatus", { userId, online: true });
+        io.emit("userStatus", onlineUsers);
       }
       console.log("onlineUsers after connect", onlineUsers.length);
     });
@@ -37,8 +37,8 @@ module.exports = (server) => {
         (user) => user.socketId === socket.id
       );
       if (userIndex !== -1) {
-        const [removedUser] = onlineUsers.splice(userIndex, 1);
-        io.emit("userStatus", { userId: removedUser.userId, online: false });
+        onlineUsers.splice(userIndex, 1);
+        io.emit("userStatus", onlineUsers);
       }
       console.log("disconnected", onlineUsers.length);
     });
@@ -186,8 +186,8 @@ module.exports = (server) => {
         (user) => user.socketId === socket.id
       );
       if (userIndex !== -1) {
-        const [removedUser] = onlineUsers.splice(userIndex, 1);
-        io.emit("userStatus", { userId: removedUser.userId, online: false });
+        onlineUsers.splice(userIndex, 1);
+        io.emit("userStatus", onlineUsers);
       }
       console.log("onlineUsers after disConnect", onlineUsers.length);
     });
