@@ -48,7 +48,6 @@ module.exports = (server) => {
     });
 
     socket.on("getConversations", async (userId) => {
-      console.log(userId);
       try {
         const conversations = await Conversation.find({
           participants: userId,
