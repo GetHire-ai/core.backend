@@ -42,7 +42,7 @@ app.use("/api/blogroutes", BlogRoutes);
 
 app.get("/", (req, res) => {
   res.send("Get Hire API is live! 14-10-2024");
-  sendMessage(917354406325, "messageBody");
+  // sendMessage(917354406325, "messageBody");
 });
 
 // Connect to database
