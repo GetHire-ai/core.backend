@@ -13,15 +13,16 @@ const {
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const app = express();
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/");
+    cb(null, "/tmp/uploads"); // Use /tmp for writable directory
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
+
 const upload = multer({ storage: storage });
 
 router.get("/result/:id", getResultById);
@@ -36,6 +37,5 @@ router.get(
 );
 
 router.post("/submitaudio", upload.single("audio"), submitAudio);
-
 
 module.exports = router;
