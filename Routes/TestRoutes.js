@@ -23,11 +23,6 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
-const fs = require("fs");
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
 
 router.get("/result/:id", getResultById);
 router.get("/result/bystudentid/:id/:jobId", getTestResultsByStudentId);
