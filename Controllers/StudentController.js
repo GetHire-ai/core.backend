@@ -84,15 +84,7 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
         url = uploadedFile.secure_url;
       }
     }
-
-    let Skill_Set = [];
-    if (skills) {
-      for (const skill of skills) {
-        Skill_Set.push({ Skill: skill });
-      }
-    }
     let Education = [{ Degree }];
-
     Student = new StudentModel({
       Name,
       Email,
@@ -108,7 +100,7 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
       highestQualification,
       jobTitles,
       locations,
-      Skill_Set,
+      Skill_Set:skills,
       values,
       youare,
       otp,
