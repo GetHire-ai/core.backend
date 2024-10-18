@@ -7,8 +7,8 @@ const path = require("path");
 
 const getOnboarding = asynchandler(async (req, res) => {
   try {
-    const { jobId, studentId, companyId } = req.params;
-    if (!jobId || !studentId || !companyId) {
+    const { jobId, studentId } = req.params;
+    if (!jobId || !studentId) {
       return response.notFoundError(
         res,
         "jobId, studentId, and companyId are required"
@@ -17,7 +17,6 @@ const getOnboarding = asynchandler(async (req, res) => {
     let onboardingDetails = await OnboardingDetailsModel.findOne({
       JobId: jobId,
       StudentId: studentId,
-      CompanyId: companyId,
     })
       .populate("CompanyId")
       .populate("StudentId")
@@ -43,8 +42,6 @@ const getOnboarding = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
-
-
 
 const updateOnboarding = asynchandler(async (req, res) => {
   try {
