@@ -23,6 +23,7 @@ const ChatRoutes = require("./Routes/ChatRoutes");
 const AdminChatRoutes = require("./Routes/AdminChatRoutes");
 const NotificationRoutes = require("./Routes/NotificationRoutes");
 const BlogRoutes = require("./Routes/BlogRoutes");
+const OnboardRoutes = require("./Routes/OnboardingRoutes");
 const { sendMessage } = require("./Utils/whatsApp");
 
 // College Routes
@@ -39,6 +40,7 @@ app.use("/api/chatRoutes", ChatRoutes);
 app.use("/api/adminchatRoutes", AdminChatRoutes);
 app.use("/api/notificationroutes", NotificationRoutes);
 app.use("/api/blogroutes", BlogRoutes);
+app.use("/api/onboardroutes", OnboardRoutes);
 
 app.get("/", (req, res) => {
   res.send("Get Hire API is live! 14-10-2024");

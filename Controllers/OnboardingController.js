@@ -1,6 +1,9 @@
 const asynchandler = require("express-async-handler");
 const response = require("../Middleware/responseMiddlewares");
 const OnboardingDetailsModel = require("../Model/OnboardingDetailsModel");
+const cloudinary = require("../Middleware/Cloudinary");
+const fs = require("fs");
+const path = require("path");
 
 const getOnboarding = asynchandler(async (req, res) => {
   try {
@@ -25,9 +28,6 @@ const getOnboarding = asynchandler(async (req, res) => {
         StudentId: studentId,
         CompanyId: companyId,
         currentStep: "Personal Information",
-        personalInfo: {},
-        employmentDetails: {},
-        documents: {},
       });
 
       await onboardingDetails.save();
@@ -44,79 +44,82 @@ const getOnboarding = asynchandler(async (req, res) => {
   }
 });
 
+
+
 const updateOnboarding = asynchandler(async (req, res) => {
   try {
     const { id } = req.params;
 
     const onboardingDetails = await OnboardingDetailsModel.findById(id);
+    if (!onboardingDetails) {
+      return response.errorResponse(res, "Onboarding details not found", 404);
+    }
 
-    if (req.files) {
-      if (req.files.employmentContract) {
-        onboardingDetails.documents.employmentContract =
-          req.files.employmentContract[0].path;
+    // List of non-file fields that can be updated from req.body
+    const fieldKeys = [
+      "fullName",
+      "contactInformation",
+      "residentialAddress",
+      "jobTitle",
+      "department",
+      "startDate",
+      "emailAccount",
+      "softwareAccess",
+      "teamIntroduction",
+      "reportingStructure",
+    ];
+
+    // Update fields from req.body if present
+    fieldKeys.forEach((key) => {
+      if (req.body[key]) {
+        onboardingDetails[key] = req.body[key];
       }
-      if (req.files.nda) {
-        onboardingDetails.documents.nda = req.files.nda[0].path;
+    });
+
+    // Helper function to upload files and delete from the local folder
+    const uploadFile = async (fileKey) => {
+      if (req.files && req.files[fileKey] && req.files[fileKey][0]) {
+        const filePath = req.files[fileKey][0].path;
+        const uploadedFile = await cloudinary.uploader.upload(filePath, {
+          folder: "GetHire",
+        });
+
+        // Delete the file from the local server after uploading to Cloudinary
+        if (uploadedFile) {
+          fs.unlink(filePath, (err) => {
+            if (err) console.log(`Failed to delete file: ${filePath}`, err);
+          });
+          return uploadedFile.secure_url;
+        }
       }
-      if (req.files.taxForms) {
-        onboardingDetails.documents.taxForms = req.files.taxForms[0].path;
-      }
-      if (req.files.panCard) {
-        onboardingDetails.documents.panCard = req.files.panCard[0].path;
-      }
-      if (req.files.aadharCard) {
-        onboardingDetails.documents.aadharCard = req.files.aadharCard[0].path;
-      }
-      if (req.files.salarySlip) {
-        onboardingDetails.documents.salarySlip = req.files.salarySlip[0].path;
-      }
-      if (req.files.bankStatement) {
-        onboardingDetails.documents.bankStatement =
-          req.files.bankStatement[0].path;
-      }
-      if (req.files.additionalDocument) {
-        onboardingDetails.documents.additionalDocument =
-          req.files.additionalDocument[0].path;
-      }
-      if (req.files.additionalDocument2) {
-        onboardingDetails.documents.additionalDocument2 =
-          req.files.additionalDocument2[0].path;
-      }
-      if (req.files.bankStatement) {
-        onboardingDetails.documents.offerLetterTemplate =
-          req.files.offerLetterTemplate[0].path;
-      }
-      if (req.files.employeeHandbook) {
-        onboardingDetails.documents.employeeHandbook =
-          req.files.employeeHandbook[0].path;
-      }
-      if (req.files.roleSpecificTraining) {
-        onboardingDetails.documents.roleSpecificTraining =
-          req.files.roleSpecificTraining[0].path;
-      }
-      if (req.files.orientationSchedule) {
-        onboardingDetails.documents.orientationSchedule =
-          req.files.orientationSchedule[0].path;
+      return null;
+    };
+
+    // List of document keys that require file uploads
+    const documentKeys = [
+      "employmentContract",
+      "nda",
+      "taxForms",
+      "panCard",
+      "aadharCard",
+      "salarySlip",
+      "bankStatement",
+      "additionalDocument",
+      "additionalDocument2",
+      "offerLetterTemplate",
+      "employeeHandbook",
+      "roleSpecificTraining",
+      "orientationSchedule",
+    ];
+
+    // Update document fields with uploaded files if present
+    for (const key of documentKeys) {
+      const uploadedUrl = await uploadFile(key);
+      if (uploadedUrl) {
+        onboardingDetails[key] = uploadedUrl;
       }
     }
 
-    if (req.body.personalInfo) {
-      onboardingDetails.personalInfo = {
-        ...onboardingDetails.personalInfo,
-        ...req.body.personalInfo,
-      };
-    }
-
-    if (req.body.employmentDetails) {
-      onboardingDetails.employmentDetails = {
-        ...onboardingDetails.employmentDetails,
-        ...req.body.employmentDetails,
-      };
-    }
-
-    if (req.body.currentStep) {
-      onboardingDetails.currentStep = req.body.currentStep;
-    }
     await onboardingDetails.save();
     response.successResponse(res, onboardingDetails, "Onboarding Updated");
   } catch (error) {

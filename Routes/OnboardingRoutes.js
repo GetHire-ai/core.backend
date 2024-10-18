@@ -7,20 +7,19 @@ const path = require("path");
 const router = express.Router();
 const multer = require("multer");
 
-// Set up Multer for file uploads
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Directory where files will be stored
+    cb(null, "uploads/"); 
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // Appending extension
+    cb(null, Date.now() + path.extname(file.originalname)); 
   },
 });
 const upload = multer({ storage });
-
-router.get("/on-board/:jobId/:studentId/:companyId", getOnboarding);
-router.post(
-  "/on-board/:jobId/:studentId/:companyId",
+router.get("/:jobId/:studentId/:companyId", getOnboarding);
+router.put(
+  "/update/:id",
   upload.fields([
     { name: "employmentContract", maxCount: 1 },
     { name: "nda", maxCount: 1 },

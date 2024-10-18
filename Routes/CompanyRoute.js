@@ -63,17 +63,13 @@ const {
 } = require("../Controllers/CompayController");
 const upload = require("../Middleware/multer");
 const { GetAllStudents } = require("../Controllers/AdminController");
-const { verifyToken } = require("otpless-node-js-auth-sdk");
 const {
   getFilteredCandidates,
   markStudentAsNotInterested,
   inviteStudent,
 } = require("../Controllers/JobInvitationController");
 const { postOnLinkedin } = require("../Controllers/socialMediaPost");
-const { getOnboarding,updateOnboarding } = require("../Controllers/OnboardingController");
-
 const CompanyRouter = express.Router();
-
 CompanyRouter.post("/verifyEmailotp", verifyEmailotp);
 CompanyRouter.post("/RegisterCompany", RegisterCompany);
 CompanyRouter.post("/resetpassword/:id", resetPassword);
@@ -268,16 +264,6 @@ CompanyRouter.get(
   "/getinvited/notintrest/:jobId/:studentId",
   markStudentAsNotInterested
 );
-
 // Share on social media
-
 CompanyRouter.post("/share-linkedin/:id", CompanyverifyToken, postOnLinkedin);
-
-// invite
-CompanyRouter.get(
-  "/get-onboarding/:jobId/:studentId/:companyId",
-  getOnboarding
-);
-CompanyRouter.post("/update-onboarding/:id", updateOnboarding);
-
 module.exports = CompanyRouter;
