@@ -100,7 +100,7 @@ const RegisterStudent = asynchandler(async (req, res, next) => {
       highestQualification,
       jobTitles,
       locations,
-      Skill_Set:skills,
+      Skill_Set: skills,
       values,
       youare,
       otp,
@@ -728,6 +728,8 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
       ...jobApplication.interviewSchedule, // Keep existing properties
       date,
       Time,
+      hrAccepted: false,
+      canditateAccepted: true,
     };
     jobApplication.isinterviewScheduled = true;
     await jobApplication.save();
@@ -757,6 +759,8 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
+
+
 
 //============================[ApplyForJob ]==============================
 

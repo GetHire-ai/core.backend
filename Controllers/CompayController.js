@@ -1589,6 +1589,8 @@ const ScheduleInterview = asynchandler(async (req, res) => {
 
     jobApplication.interviewSchedule = {
       ...interviewSchedule,
+      hrAccepted: true,
+      canditateAccepted: false,
       // meetLink: meetLink,
     };
 
@@ -1751,33 +1753,27 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
   try {
     const { id } = req.params;
     const companyId = req.userId;
-
     const jobApplication = await JobApplyModel.findById(id)
       .populate("CompanyId")
       .populate("JobId");
-
     if (!jobApplication) {
       return response.notFoundError(res, "Job application not found.");
     }
-
     jobApplication.status = "selected";
     jobApplication.IsSelectedforjob = true;
     jobApplication.isInterviewcompleted = true;
     await jobApplication.save();
-
-    let notification = await Notification.create({
+    await Notification.create({
       CompanyId: companyId,
       StudentId: jobApplication?.StudentId?._id,
       JobId: jobApplication?.JobId?._id,
       text: `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`,
     });
-
     let findStudent = await StudentModel.findById(
       jobApplication?.StudentId?._id
     );
-
     sendMail(
-      jobApplication?.StudentId?.Email,
+      findStudent?.Email,
       "you are selected",
       `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`
     );
@@ -1785,31 +1781,23 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
       findStudent.Number,
       `Your job application for ${jobApplication?.JobId?.positionName} is selected for job`
     );
-
     const { StudentId, JobId } = jobApplication;
     const job = await JobModel.findById(JobId);
-
     if (!job) {
       return response.validationError(res, "Job not found.");
     }
-
     const role = job.positionName;
-
     const company = await CompanyModel.findById(companyId);
-
     if (!company) {
       return response.validationError(res, "Company not found.");
     }
-
     const existingEmployee = await EmployeeModel.findOne({
       studentId: StudentId,
       companyId: companyId,
     });
-
     if (existingEmployee) {
-      return response.validationError(res, "Student is already in the team.");
+      return response.successResponse(res, "Student is already in the team.");
     }
-
     const newEmployee = new EmployeeModel({
       studentId: StudentId,
       companyId: companyId,
@@ -1817,7 +1805,6 @@ const selectAndAddStudentToTeam = asynchandler(async (req, res) => {
       salary: job.minSalary,
       performance: "",
     });
-
     await newEmployee.save();
 
     company.Team.push(newEmployee);
