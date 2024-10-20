@@ -1702,23 +1702,18 @@ const GetAllUpcomingInterviews = asynchandler(async (req, res) => {
 const Resultonpending = asynchandler(async (req, res) => {
   try {
     const Companyid = req.userId;
-
     const GetAllJobsofacompany = await JobModel.find({ Company: Companyid });
-
     let allUpcomingInterviews = [];
-
     for (const job of GetAllJobsofacompany) {
       const { _id: jobId } = job;
-
       const upcomingInterviews = await JobApplyModel.find({
         JobId: jobId,
         isrejected: false,
         isshortlisted: true,
         isinterviewScheduled: true,
         isInterviewcompleted: true,
-        IsSelectedforjob: true,
+        IsSelectedforjob: false,
       }).populate("StudentId");
-
       if (upcomingInterviews.length > 0) {
         allUpcomingInterviews.push(...upcomingInterviews);
       }
