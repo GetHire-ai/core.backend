@@ -64,6 +64,8 @@ const JobSchema = new mongoose.Schema({
     { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
   ],
   postedLinkedin: { type: Boolean, default: false },
+  postedFB: { type: Boolean, default: false },
+  postedThreads: { type: Boolean, default: false },
 });
 
 const JobModel = mongoose.model("Jobs", JobSchema);

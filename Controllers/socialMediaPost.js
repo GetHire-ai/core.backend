@@ -117,7 +117,7 @@ const postOnFacebook = asynchandler(async (req, res) => {
 
     if (response.ok) {
       const jsonResponse = await response.json();
-      job.postedFacebook = true;
+      job.postedFB = true;
       job.save();
       return response.successResponse(
         res,
