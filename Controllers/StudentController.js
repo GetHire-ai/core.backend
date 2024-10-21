@@ -851,19 +851,23 @@ const GetAllAppiledJobsofaStudent = asynchandler(async (req, res) => {
     // Create an array of promises to get the test results
     const appliedJobsWithTests = await Promise.all(
       appliedJobs.map(async (element) => {
-        const tests = await AITestModel.find({ job: element.JobId._id, student: Studentid });
+        const tests = await AITestModel.findOne({ job: element.JobId._id, student: Studentid });
+
         return {
           ...element.toObject(),
-          videoInterview: tests.length > 0,
+          videoInterview: !!tests,  // Set to true if tests exist, false otherwise
+          videoInterviewDate: tests ? tests.createdAt : null  // Set date if tests exist, otherwise null
         };
       })
     );
+
     return response.successResponse(res, appliedJobsWithTests, "Applied jobs of student");
   } catch (error) {
     console.error(error);
     return response.internalServerError(res, "Internal server error");
   }
 });
+
 
 
 //=================================[Get all Appied jobs interview of a user]======================
