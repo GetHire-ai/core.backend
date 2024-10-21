@@ -563,14 +563,23 @@ const UpdateStudentProfile = asynchandler(async (req, res) => {
     let Resume;
 
     if (req.files && req.files.Resume && req.files.Resume[0]) {
-      const uploadedFile = await cloudinary.uploader.upload(
-        req.files.Resume[0].path,
-        {
-          folder: "GetHire",
+      try {
+        const uploadedFile = await cloudinary.uploader.upload(
+          req.files.Resume[0].path,
+          {
+            resource_type: "raw",
+            format: "pdf", // Add the correct format
+            folder: "GetHire", // Optional: Folder in Cloudinary where the file will be stored
+          }
+        );
+
+        if (uploadedFile) {
+          const Resume = uploadedFile.secure_url; // Get the secure URL of the uploaded PDF
+          console.log("PDF URL:", Resume); // Log the URL to the console
+          // You can also return or save this URL as needed
         }
-      );
-      if (uploadedFile) {
-        Resume = uploadedFile.secure_url;
+      } catch (error) {
+        console.error("Upload error:", error);
       }
     }
 
@@ -759,8 +768,6 @@ const ReScheduleInterview = asynchandler(async (req, res) => {
     return response.internalServerError(res, "Internal server error");
   }
 });
-
-
 
 //============================[ApplyForJob ]==============================
 
