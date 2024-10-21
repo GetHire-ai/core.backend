@@ -68,7 +68,7 @@ const {
   markStudentAsNotInterested,
   inviteStudent,
 } = require("../Controllers/JobInvitationController");
-const { postOnLinkedin } = require("../Controllers/socialMediaPost");
+const { postOnLinkedin, postOnFacebook, postOnThreads } = require("../Controllers/socialMediaPost");
 const CompanyRouter = express.Router();
 CompanyRouter.post("/verifyEmailotp", verifyEmailotp);
 CompanyRouter.post("/RegisterCompany", RegisterCompany);
@@ -266,4 +266,6 @@ CompanyRouter.get(
 );
 // Share on social media
 CompanyRouter.post("/share-linkedin/:id", CompanyverifyToken, postOnLinkedin);
+CompanyRouter.post("/share-fb/:id", CompanyverifyToken, postOnFacebook);
+CompanyRouter.post("/share-threads/:id", CompanyverifyToken, postOnThreads);
 module.exports = CompanyRouter;
