@@ -677,9 +677,6 @@ const CreateJob = asynchandler(async (req, res) => {
     if (!positionName) {
       return response.validationError(res, "positionName is required");
     }
-    if (!location) {
-      return response.validationError(res, "location is required");
-    }
 
     let company = await CompanyModel.findById(Companyid);
     if (!company) {
