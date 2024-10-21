@@ -4,7 +4,7 @@ const response = require("../Middleware/responseMiddlewares");
 const Job = require("../Model/JobModel");
 const fbToken = process.env.facebookToken;
 const fbPageId = process.env.facebookPageId;
-const token = process.env.linkedinToken;
+const linkedinToken = process.env.linkedinToken;
 const threadsToken = process.env.threadsToken;
 
 const postOnLinkedin = asynchandler(async (req, res) => {
@@ -50,12 +50,13 @@ const postOnLinkedin = asynchandler(async (req, res) => {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${linkedinToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(postData),
     });
-    console.log(response);
+    const jsonResponse = await response.json();
+    console.log(jsonResponse);
     if (response.ok) {
       const jsonResponse = await response.json();
       job.postedLinkedin = true;
