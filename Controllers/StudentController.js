@@ -11,6 +11,7 @@ const JobModel = require("../Model/JobModel");
 const JobApplyModel = require("../Model/JobApplyModel");
 const BookmarkModel = require("../Model/BookmarkModel");
 const TestModel = require("../Model/TestModel");
+const AITestModel = require("../Model/AITestResult");
 const StudentTestResultModel = require("../Model/TestResultofaStudent");
 const NotificationCompanyModel = require("../Model/NotificationComModel");
 const Notification = require("../Model/NotificationModel");
@@ -843,20 +844,27 @@ const GetAllAppiledJobsofaStudent = asynchandler(async (req, res) => {
       .populate("CompanyId")
       .populate("JobId");
 
-    if (!appliedJobs) {
-      return response.notFound(res, "No applied jobs found for this student.");
+    if (!appliedJobs || appliedJobs.length === 0) {
+      return response.successResponse(res, [], "No applied jobs found for this student.");
     }
 
-    return response.successResponse(
-      res,
-      appliedJobs,
-      "Retrieved applied jobs successfully."
+    // Create an array of promises to get the test results
+    const appliedJobsWithTests = await Promise.all(
+      appliedJobs.map(async (element) => {
+        const tests = await AITestModel.find({ job: element.JobId._id, student: Studentid });
+        return {
+          ...element.toObject(),
+          videoInterview: tests.length > 0,
+        };
+      })
     );
+    return response.successResponse(res, appliedJobsWithTests, "Applied jobs of student");
   } catch (error) {
     console.error(error);
     return response.internalServerError(res, "Internal server error");
   }
 });
+
 
 //=================================[Get all Appied jobs interview of a user]======================
 const GetAllJobinterviewofaStudent = async (req, res) => {
